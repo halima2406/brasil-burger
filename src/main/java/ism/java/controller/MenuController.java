@@ -45,6 +45,9 @@ public class MenuController {
                 case 4:
                     archiver();
                     break;
+                case 5:
+                    voirDetails();
+                    break;
                 case 0:
                     back = true;
                     break;
@@ -149,5 +152,12 @@ public class MenuController {
                 menuView.afficherErreur("Impossible d'archiver");
             }
         }
+    }
+    
+    private void voirDetails() {
+        lister();
+        int id = menuView.saisirId();
+        Menu menu = menuService.getMenuById(id);
+        menuView.afficherDetails(menu);
     }
 }
