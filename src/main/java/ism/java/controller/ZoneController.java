@@ -30,6 +30,9 @@ public class ZoneController {
                 case 2:
                     ajouter();
                     break;
+                case 3:
+                    modifier();
+                    break;
                 case 0:
                     back = true;
                     break;
@@ -54,6 +57,28 @@ public class ZoneController {
             zoneView.afficherSucces("Zone ajoutee avec ID : " + zone.getId());
         } else {
             zoneView.afficherErreur("Impossible d'ajouter la zone");
+        }
+    }
+    
+    private void modifier() {
+        lister();
+        int id = zoneView.saisirId();
+        Zone zone = zoneService.getZoneById(id);
+        
+        if (zone == null) {
+            zoneView.afficherErreur("Zone non trouvee");
+            return;
+        }
+        
+        zoneView.afficherZone(zone);
+        
+        String quartier = zoneView.saisirQuartierOptional(zone.getQuartier());
+        double prix = zoneView.saisirPrixOptional(zone.getPrix());
+        
+        if (zoneService.updateZone(id, quartier, prix)) {
+            zoneView.afficherSucces("Zone modifiee");
+        } else {
+            zoneView.afficherErreur("Impossible de modifier");
         }
     }
 }
