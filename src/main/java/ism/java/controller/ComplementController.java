@@ -35,6 +35,9 @@ public class ComplementController {
                 case 3:
                     modifier();
                     break;
+                case 4:
+                    archiver();
+                    break;
                 case 0:
                     back = true;
                     break;
@@ -85,6 +88,38 @@ public class ComplementController {
             complementView.afficherSucces("Complement modifie");
         } else {
             complementView.afficherErreur("Impossible de modifier");
+        }
+    }
+    
+    private void archiver() {
+        lister();
+        int id = complementView.saisirId();
+        
+        Produit complement = null;
+        for (Produit c : complementService.getAllComplementsIncludingArchived()) {
+            if (c.getId() == id) {
+                complement = c;
+                break;
+            }
+        }
+        
+        if (complement == null) {
+            complementView.afficherErreur("Complement non trouve");
+            return;
+        }
+        
+        if (complement.isEstArchive()) {
+            if (complementService.unarchiveComplement(id)) {
+                complementView.afficherSucces("Complement desarchive");
+            } else {
+                complementView.afficherErreur("Impossible de desarchiver");
+            }
+        } else {
+            if (complementService.archiveComplement(id)) {
+                complementView.afficherSucces("Complement archive");
+            } else {
+                complementView.afficherErreur("Impossible d'archiver");
+            }
         }
     }
 }
