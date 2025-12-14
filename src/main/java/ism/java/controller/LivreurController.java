@@ -27,6 +27,9 @@ public class LivreurController {
                 case 1:
                     lister();
                     break;
+                case 2:
+                    ajouter();
+                    break;
                 case 0:
                     back = true;
                     break;
@@ -39,5 +42,18 @@ public class LivreurController {
     private void lister() {
         List<Livreur> livreurs = livreurService.getAllLivreursIncludingArchived();
         livreurView.afficherListe(livreurs);
+    }
+    
+    private void ajouter() {
+        String nom = livreurView.saisirNom();
+        String telephone = livreurView.saisirTelephone();
+        
+        Livreur livreur = livreurService.addLivreur(nom, telephone);
+        
+        if (livreur != null) {
+            livreurView.afficherSucces("Livreur ajoute avec ID : " + livreur.getId());
+        } else {
+            livreurView.afficherErreur("Impossible d'ajouter le livreur");
+        }
     }
 }
