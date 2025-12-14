@@ -39,6 +39,9 @@ public class MenuController {
                 case 2:
                     ajouter();
                     break;
+                case 3:
+                    modifier();
+                    break;
                 case 0:
                     back = true;
                     break;
@@ -76,6 +79,40 @@ public class MenuController {
             menuView.afficherDetails(menu);
         } else {
             menuView.afficherErreur("Impossible d'ajouter le menu");
+        }
+    }
+    
+    private void modifier() {
+        lister();
+        int id = menuView.saisirId();
+        Menu menu = menuService.getMenuById(id);
+        
+        if (menu == null) {
+            menuView.afficherErreur("Menu non trouve");
+            return;
+        }
+        
+        menuView.afficherDetails(menu);
+        
+        String nom = menuView.saisirNomOptional(menu.getNom());
+        String image = menuView.saisirImageOptional(menu.getImage());
+        
+        List<Produit> burgers = burgerService.getAllBurgers();
+        menuView.afficherListeBurgers(burgers);
+        int burgerId = menuView.saisirBurgerIdOptional(menu.getBurgerId());
+        
+        List<Produit> boissons = complementService.getAllBoissons();
+        menuView.afficherListeBoissons(boissons);
+        int boissonId = menuView.saisirBoissonIdOptional(menu.getBoissonId());
+        
+        List<Produit> frites = complementService.getAllFrites();
+        menuView.afficherListeFrites(frites);
+        int friteId = menuView.saisirFriteIdOptional(menu.getFriteId());
+        
+        if (menuService.updateMenu(id, nom, image, burgerId, boissonId, friteId)) {
+            menuView.afficherSucces("Menu modifie");
+        } else {
+            menuView.afficherErreur("Impossible de modifier");
         }
     }
 }
