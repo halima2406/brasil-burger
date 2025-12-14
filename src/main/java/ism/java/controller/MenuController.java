@@ -42,6 +42,9 @@ public class MenuController {
                 case 3:
                     modifier();
                     break;
+                case 4:
+                    archiver();
+                    break;
                 case 0:
                     back = true;
                     break;
@@ -113,6 +116,38 @@ public class MenuController {
             menuView.afficherSucces("Menu modifie");
         } else {
             menuView.afficherErreur("Impossible de modifier");
+        }
+    }
+    
+    private void archiver() {
+        lister();
+        int id = menuView.saisirId();
+        
+        Menu menu = null;
+        for (Menu m : menuService.getAllMenusIncludingArchived()) {
+            if (m.getId() == id) {
+                menu = m;
+                break;
+            }
+        }
+        
+        if (menu == null) {
+            menuView.afficherErreur("Menu non trouve");
+            return;
+        }
+        
+        if (menu.isEstArchive()) {
+            if (menuService.unarchiveMenu(id)) {
+                menuView.afficherSucces("Menu desarchive");
+            } else {
+                menuView.afficherErreur("Impossible de desarchiver");
+            }
+        } else {
+            if (menuService.archiveMenu(id)) {
+                menuView.afficherSucces("Menu archive");
+            } else {
+                menuView.afficherErreur("Impossible d'archiver");
+            }
         }
     }
 }
