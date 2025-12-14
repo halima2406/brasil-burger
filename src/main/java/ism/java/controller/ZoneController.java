@@ -33,6 +33,9 @@ public class ZoneController {
                 case 3:
                     modifier();
                     break;
+                case 4:
+                    archiver();
+                    break;
                 case 0:
                     back = true;
                     break;
@@ -79,6 +82,32 @@ public class ZoneController {
             zoneView.afficherSucces("Zone modifiee");
         } else {
             zoneView.afficherErreur("Impossible de modifier");
+        }
+    }
+    
+    private void archiver() {
+        lister();
+        int id = zoneView.saisirId();
+        
+        Zone zone = zoneService.getZoneById(id);
+        
+        if (zone == null) {
+            zoneView.afficherErreur("Zone non trouvee");
+            return;
+        }
+        
+        if (zone.isEstArchive()) {
+            if (zoneService.unarchiveZone(id)) {
+                zoneView.afficherSucces("Zone desarchivee");
+            } else {
+                zoneView.afficherErreur("Impossible de desarchiver");
+            }
+        } else {
+            if (zoneService.archiveZone(id)) {
+                zoneView.afficherSucces("Zone archivee");
+            } else {
+                zoneView.afficherErreur("Impossible d'archiver");
+            }
         }
     }
 }
