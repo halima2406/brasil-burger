@@ -27,6 +27,9 @@ public class ZoneController {
                 case 1:
                     lister();
                     break;
+                case 2:
+                    ajouter();
+                    break;
                 case 0:
                     back = true;
                     break;
@@ -39,5 +42,18 @@ public class ZoneController {
     private void lister() {
         List<Zone> zones = zoneService.getAllZonesIncludingArchived();
         zoneView.afficherListe(zones);
+    }
+    
+    private void ajouter() {
+        String quartier = zoneView.saisirQuartier();
+        double prix = zoneView.saisirPrix();
+        
+        Zone zone = zoneService.addZone(quartier, prix);
+        
+        if (zone != null) {
+            zoneView.afficherSucces("Zone ajoutee avec ID : " + zone.getId());
+        } else {
+            zoneView.afficherErreur("Impossible d'ajouter la zone");
+        }
     }
 }
