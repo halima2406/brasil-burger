@@ -38,26 +38,22 @@ public class Main {
             return;
         }
         
-        // init repos
         ProduitRepository produitRepository = new ProduitRepositoryImpl();
         MenuRepository menuRepository = new MenuRepositoryImpl(produitRepository);
         LivreurRepository livreurRepository = new LivreurRepositoryImpl();
         ZoneRepository zoneRepository = new ZoneRepositoryImpl();
         
-        // init services
         BurgerService burgerService = new BurgerServiceImpl(produitRepository);
         ComplementService complementService = new ComplementServiceImpl(produitRepository);
         MenuService menuService = new MenuServiceImpl(menuRepository, produitRepository);
         LivreurService livreurService = new LivreurServiceImpl(livreurRepository);
         ZoneService zoneService = new ZoneServiceImpl(zoneRepository);
         
-        // init controllers
         BurgerController burgerController = new BurgerController(burgerService, scanner);
         ComplementController complementController = new ComplementController(complementService, scanner);
         MenuController menuController = new MenuController(menuService, burgerService, complementService, scanner);
         LivreurController livreurController = new LivreurController(livreurService, scanner);
         ZoneController zoneController = new ZoneController(zoneService, scanner);
-        
         
         boolean running = true;
         while (running) {
