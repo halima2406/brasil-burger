@@ -16,7 +16,7 @@ public class Livreur {
         this.estArchive = false;
     }
     
-    // Getters et Setters
+    
     public int getId() {
         return id;
     }
