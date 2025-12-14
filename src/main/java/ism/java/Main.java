@@ -64,7 +64,7 @@ public class Main {
             System.out.println("4. Gerer les Livreurs");
             System.out.println("5. Gerer les Zones");
             System.out.println("0. Quitter");
-            System.out.println("====================================");
+            
             System.out.print("Choix : ");
             
             int choix = scanner.nextInt();
