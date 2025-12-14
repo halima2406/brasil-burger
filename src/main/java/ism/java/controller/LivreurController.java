@@ -33,6 +33,9 @@ public class LivreurController {
                 case 3:
                     modifier();
                     break;
+                case 4:
+                    archiver();
+                    break;
                 case 0:
                     back = true;
                     break;
@@ -79,6 +82,32 @@ public class LivreurController {
             livreurView.afficherSucces("Livreur modifie");
         } else {
             livreurView.afficherErreur("Impossible de modifier");
+        }
+    }
+    
+    private void archiver() {
+        lister();
+        int id = livreurView.saisirId();
+        
+        Livreur livreur = livreurService.getLivreurById(id);
+        
+        if (livreur == null) {
+            livreurView.afficherErreur("Livreur non trouve");
+            return;
+        }
+        
+        if (livreur.isEstArchive()) {
+            if (livreurService.unarchiveLivreur(id)) {
+                livreurView.afficherSucces("Livreur desarchive");
+            } else {
+                livreurView.afficherErreur("Impossible de desarchiver");
+            }
+        } else {
+            if (livreurService.archiveLivreur(id)) {
+                livreurView.afficherSucces("Livreur archive");
+            } else {
+                livreurView.afficherErreur("Impossible d'archiver");
+            }
         }
     }
 }
