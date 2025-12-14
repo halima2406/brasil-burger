@@ -32,6 +32,9 @@ public class ComplementController {
                 case 2:
                     ajouter();
                     break;
+                case 3:
+                    modifier();
+                    break;
                 case 0:
                     back = true;
                     break;
@@ -58,6 +61,30 @@ public class ComplementController {
             complementView.afficherSucces("Complement ajoute avec ID : " + complement.getId());
         } else {
             complementView.afficherErreur("Impossible d'ajouter le complement");
+        }
+    }
+    
+    private void modifier() {
+        lister();
+        int id = complementView.saisirId();
+        Produit complement = complementService.getComplementById(id);
+        
+        if (complement == null) {
+            complementView.afficherErreur("Complement non trouve");
+            return;
+        }
+        
+        complementView.afficherComplement(complement);
+        
+        String nom = complementView.saisirNomOptional(complement.getNom());
+        double prix = complementView.saisirPrixOptional(complement.getPrix());
+        String image = complementView.saisirImageOptional(complement.getImage());
+        TypeComplement type = complementView.saisirTypeComplementOptional(complement.getTypeComplement());
+        
+        if (complementService.updateComplement(id, nom, prix, image, type)) {
+            complementView.afficherSucces("Complement modifie");
+        } else {
+            complementView.afficherErreur("Impossible de modifier");
         }
     }
 }
