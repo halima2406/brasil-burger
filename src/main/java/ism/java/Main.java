@@ -38,10 +38,12 @@ public class Main {
             return;
         }
         
+        
         ProduitRepository produitRepository = new ProduitRepositoryImpl();
         MenuRepository menuRepository = new MenuRepositoryImpl(produitRepository);
         LivreurRepository livreurRepository = new LivreurRepositoryImpl();
         ZoneRepository zoneRepository = new ZoneRepositoryImpl();
+        
         
         BurgerService burgerService = new BurgerServiceImpl(produitRepository);
         ComplementService complementService = new ComplementServiceImpl(produitRepository);
@@ -49,11 +51,13 @@ public class Main {
         LivreurService livreurService = new LivreurServiceImpl(livreurRepository);
         ZoneService zoneService = new ZoneServiceImpl(zoneRepository);
         
+       
         BurgerController burgerController = new BurgerController(burgerService, scanner);
         ComplementController complementController = new ComplementController(complementService, scanner);
         MenuController menuController = new MenuController(menuService, burgerService, complementService, scanner);
         LivreurController livreurController = new LivreurController(livreurService, scanner);
         ZoneController zoneController = new ZoneController(zoneService, scanner);
+        
         
         boolean running = true;
         while (running) {
@@ -64,7 +68,7 @@ public class Main {
             System.out.println("4. Gerer les Livreurs");
             System.out.println("5. Gerer les Zones");
             System.out.println("0. Quitter");
-            
+            System.out.println("====================================");
             System.out.print("Choix : ");
             
             int choix = scanner.nextInt();
