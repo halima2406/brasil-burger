@@ -30,6 +30,9 @@ public class BurgerController {
                 case 2:
                     ajouter();
                     break;
+                case 3:
+                    modifier();
+                    break;
                 case 0:
                     back = true;
                     break;
@@ -55,6 +58,29 @@ public class BurgerController {
             burgerView.afficherSucces("Burger ajoute avec ID : " + burger.getId());
         } else {
             burgerView.afficherErreur("Impossible d'ajouter le burger");
+        }
+    }
+    
+    private void modifier() {
+        lister();
+        int id = burgerView.saisirId();
+        Produit burger = burgerService.getBurgerById(id);
+        
+        if (burger == null) {
+            burgerView.afficherErreur("Burger non trouve");
+            return;
+        }
+        
+        burgerView.afficherBurger(burger);
+        
+        String nom = burgerView.saisirNomOptional(burger.getNom());
+        double prix = burgerView.saisirPrixOptional(burger.getPrix());
+        String image = burgerView.saisirImageOptional(burger.getImage());
+        
+        if (burgerService.updateBurger(id, nom, prix, image)) {
+            burgerView.afficherSucces("Burger modifie");
+        } else {
+            burgerView.afficherErreur("Impossible de modifier");
         }
     }
 }
