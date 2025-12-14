@@ -27,6 +27,9 @@ public class BurgerController {
                 case 1:
                     lister();
                     break;
+                case 2:
+                    ajouter();
+                    break;
                 case 0:
                     back = true;
                     break;
@@ -39,5 +42,19 @@ public class BurgerController {
     private void lister() {
         List<Produit> burgers = burgerService.getAllBurgersIncludingArchived();
         burgerView.afficherListe(burgers);
+    }
+    
+    private void ajouter() {
+        String nom = burgerView.saisirNom();
+        double prix = burgerView.saisirPrix();
+        String image = burgerView.saisirImage();
+        
+        Produit burger = burgerService.addBurger(nom, prix, image);
+        
+        if (burger != null) {
+            burgerView.afficherSucces("Burger ajoute avec ID : " + burger.getId());
+        } else {
+            burgerView.afficherErreur("Impossible d'ajouter le burger");
+        }
     }
 }
