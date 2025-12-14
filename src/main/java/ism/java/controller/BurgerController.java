@@ -12,6 +12,7 @@ public class BurgerController {
     private BurgerService burgerService;
     private BurgerView burgerView;
     
+    
     public BurgerController(BurgerService burgerService, Scanner scanner) {
         this.burgerService = burgerService;
         this.burgerView = new BurgerView(scanner);
@@ -32,6 +33,9 @@ public class BurgerController {
                     break;
                 case 3:
                     modifier();
+                    break;
+                case 4:
+                    archiver();
                     break;
                 case 0:
                     back = true;
@@ -81,6 +85,38 @@ public class BurgerController {
             burgerView.afficherSucces("Burger modifie");
         } else {
             burgerView.afficherErreur("Impossible de modifier");
+        }
+    }
+    
+    private void archiver() {
+        lister();
+        int id = burgerView.saisirId();
+        
+        Produit burger = null;
+        for (Produit b : burgerService.getAllBurgersIncludingArchived()) {
+            if (b.getId() == id) {
+                burger = b;
+                break;
+            }
+        }
+        
+        if (burger == null) {
+            burgerView.afficherErreur("Burger non trouve");
+            return;
+        }
+        
+        if (burger.isEstArchive()) {
+            if (burgerService.unarchiveBurger(id)) {
+                burgerView.afficherSucces("Burger desarchive");
+            } else {
+                burgerView.afficherErreur("Impossible de desarchiver");
+            }
+        } else {
+            if (burgerService.archiveBurger(id)) {
+                burgerView.afficherSucces("Burger archive");
+            } else {
+                burgerView.afficherErreur("Impossible d'archiver");
+            }
         }
     }
 }
