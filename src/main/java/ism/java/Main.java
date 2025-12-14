@@ -57,14 +57,14 @@ public class Main {
         
         boolean running = true;
         while (running) {
-            
+            System.out.println("\n========== BRASIL BURGER ==========");
             System.out.println("1. Gerer les Burgers");
             System.out.println("2. Gerer les Menus");
             System.out.println("3. Gerer les Complements");
             System.out.println("4. Gerer les Livreurs");
             System.out.println("5. Gerer les Zones");
             System.out.println("0. Quitter");
-           
+            System.out.println("====================================");
             System.out.print("Choix : ");
             
             int choix = scanner.nextInt();
