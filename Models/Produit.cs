@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Runtime.InteropServices;
 
 namespace BrasilBurger.Models
 {
@@ -12,6 +13,7 @@ namespace BrasilBurger.Models
 
         [Column("nom")]
         public string Nom { get; set; } = string.Empty;
+        //Ou je peux aussi mettre = "" ; 
 
         [Column("prix")]
         public decimal Prix { get; set; }
@@ -20,7 +22,7 @@ namespace BrasilBurger.Models
         public string? Image { get; set; }
 
         [Column("type_produit")]
-        public string TypeProduit { get; set; } = string.Empty;
+        public string TypeProduit { get; set; } = "";
 
         [Column("type_complement")]
         public string? TypeComplement { get; set; }
