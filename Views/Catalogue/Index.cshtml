@@ -1,0 +1,161 @@
+@{
+    ViewData["Title"] = "Catalogue";
+    var burgers = ViewBag.Burgers as List<Produit> ?? new List<Produit>();
+    var frites = ViewBag.Frites as List<Produit> ?? new List<Produit>();
+    var boissons = ViewBag.Boissons as List<Produit> ?? new List<Produit>();
+    var filter = ViewBag.Filter as string ?? "all";
+    var totalCount = burgers.Count + frites.Count + boissons.Count;
+}
+
+<div class="container">
+
+    
+    <div class="filters-section">
+        <div class="filters-container">
+            <a href="?filter=all" class="filter-tab @(filter == "all" ? "active" : "")">
+                <i class="fas fa-border-all"></i>
+                Tout
+                <span class="filter-count">@totalCount</span>
+            </a>
+            <a href="?filter=burgers" class="filter-tab @(filter == "burgers" ? "active" : "")">
+                <i class="fas fa-hamburger"></i>
+                Burgers
+                <span class="filter-count">@burgers.Count</span>
+            </a>
+            <a href="?filter=frites" class="filter-tab @(filter == "frites" ? "active" : "")">
+                <i class="fas fa-french-fries"></i>
+                Frites
+                <span class="filter-count">@frites.Count</span>
+            </a>
+            <a href="?filter=boissons" class="filter-tab @(filter == "boissons" ? "active" : "")">
+                <i class="fas fa-glass-water"></i>
+                Boissons
+                <span class="filter-count">@boissons.Count</span>
+            </a>
+        </div>
+    </div>
+
+   
+    @if (filter == "all" || filter == "burgers")
+    {
+        <section class="products-section" id="burgers">
+            <div class="section-header">
+                <h2 class="section-title">Nos Burgers</h2>
+                <span class="section-count">@burgers.Count produits</span>
+            </div>
+            <div class="products-grid">
+                @foreach (var burger in burgers)
+                {
+                    <div class="product-card">
+                        <div class="product-image">
+                            @if (!string.IsNullOrEmpty(burger.Image))
+                            {
+                                <img src="@burger.Image" alt="@burger.Nom">
+                            }
+                            else
+                            {
+                                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400" alt="@burger.Nom">
+                            }
+                            <form asp-controller="Panier" asp-action="AjouterProduit" method="post" style="display: contents;">
+                                <input type="hidden" name="id" value="@burger.Id" />
+                                <button type="submit" class="product-add-btn"><i class="fas fa-plus"></i></button>
+                            </form>
+                        </div>
+                        <div class="product-info">
+                            <h3 class="product-name">@burger.Nom</h3>
+                            <p class="product-desc">Burger savoureux préparé avec soin</p>
+                            <p class="product-price">@burger.Prix.ToString("N0") <span>FCFA</span></p>
+                        </div>
+                    </div>
+                }
+                @if (!burgers.Any())
+                {
+                    <p class="text-muted">Aucun burger disponible</p>
+                }
+            </div>
+        </section>
+    }
+
+
+    @if (filter == "all" || filter == "frites")
+    {
+        <section class="products-section" id="frites">
+            <div class="section-header">
+                <h2 class="section-title">Nos Frites</h2>
+                <span class="section-count">@frites.Count produits</span>
+            </div>
+            <div class="products-grid">
+                @foreach (var frite in frites)
+                {
+                    <div class="product-card">
+                        <div class="product-image">
+                            @if (!string.IsNullOrEmpty(frite.Image))
+                            {
+                                <img src="@frite.Image" alt="@frite.Nom">
+                            }
+                            else
+                            {
+                                <img src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400" alt="@frite.Nom">
+                            }
+                            <form asp-controller="Panier" asp-action="AjouterProduit" method="post" style="display: contents;">
+                                <input type="hidden" name="id" value="@frite.Id" />
+                                <button type="submit" class="product-add-btn"><i class="fas fa-plus"></i></button>
+                            </form>
+                        </div>
+                        <div class="product-info">
+                            <h3 class="product-name">@frite.Nom</h3>
+                            <p class="product-desc">Portion généreuse et croustillante</p>
+                            <p class="product-price">@frite.Prix.ToString("N0") <span>FCFA</span></p>
+                        </div>
+                    </div>
+                }
+                @if (!frites.Any())
+                {
+                    <p class="text-muted">Aucune frite disponible</p>
+                }
+            </div>
+        </section>
+    }
+
+    
+    @if (filter == "all" || filter == "boissons")
+    {
+        <section class="products-section" id="boissons">
+            <div class="section-header">
+                <h2 class="section-title">Nos Boissons</h2>
+                <span class="section-count">@boissons.Count produits</span>
+            </div>
+            <div class="products-grid">
+                @foreach (var boisson in boissons)
+                {
+                    <div class="product-card">
+                        <div class="product-image">
+                            @if (!string.IsNullOrEmpty(boisson.Image))
+                            {
+                                <img src="@boisson.Image" alt="@boisson.Nom">
+                            }
+                            else
+                            {
+                                <img src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400" alt="@boisson.Nom">
+                            }
+                            <form asp-controller="Panier" asp-action="AjouterProduit" method="post" style="display: contents;">
+                                <input type="hidden" name="id" value="@boisson.Id" />
+                                <button type="submit" class="product-add-btn"><i class="fas fa-plus"></i></button>
+                            </form>
+                        </div>
+                        <div class="product-info">
+                            <h3 class="product-name">@boisson.Nom</h3>
+                            <p class="product-desc">Bien frais</p>
+                            <p class="product-price">@boisson.Prix.ToString("N0") <span>FCFA</span></p>
+                        </div>
+                    </div>
+                }
+                @if (!boissons.Any())
+                {
+                    <p class="text-muted">Aucune boisson disponible</p>
+                }
+            </div>
+        </section>
+    }
+
+</div>

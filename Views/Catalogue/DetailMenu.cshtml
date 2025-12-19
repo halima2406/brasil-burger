@@ -1,0 +1,100 @@
+@model Menu
+@{
+    ViewData["Title"] = Model.Nom;
+}
+
+<div class="container py-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Accueil</a></li>
+            <li class="breadcrumb-item"><a href="/Catalogue/Menus" class="text-decoration-none">Menus</a></li>
+            <li class="breadcrumb-item active">@Model.Nom</li>
+        </ol>
+    </nav>
+
+    <div class="detail-container">
+    
+        <div>
+            @if (!string.IsNullOrEmpty(Model.Image))
+            {
+                <img src="@Model.Image" alt="@Model.Nom" class="detail-image">
+            }
+            else
+            {
+                <img src="https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=600" alt="@Model.Nom" class="detail-image">
+            }
+        </div>
+
+      
+        <div class="detail-info">
+            <span class="badge bg-success mb-3 px-3 py-2">
+                <i class="fas fa-tag me-1"></i> Menu Économique
+            </span>
+            <h1>@Model.Nom</h1>
+            <p class="detail-prix">@Model.Prix.ToString("N0") FCFA</p>
+
+           
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-box-open me-2"></i>Ce menu contient</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center p-3">
+                            <div style="width: 60px; height: 60px; background: #fff3e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                                <i class="fas fa-hamburger fa-lg" style="color: #FFA726;"></i>
+                            </div>
+                            <h6 class="fw-bold">1 Burger</h6>
+                            <p class="text-muted small mb-0">@(Model.Burger?.Nom ?? "Au choix")</p>
+                        </div>
+                        <div class="col-md-4 text-center p-3">
+                            <div style="width: 60px; height: 60px; background: #fff3e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                                <i class="fas fa-french-fries fa-lg" style="color: #FFA726;"></i>
+                            </div>
+                            <h6 class="fw-bold">1 Portion de Frites</h6>
+                            <p class="text-muted small mb-0">@(Model.Frite?.Nom ?? "Classiques")</p>
+                        </div>
+                        <div class="col-md-4 text-center p-3">
+                            <div style="width: 60px; height: 60px; background: #fff3e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                                <i class="fas fa-glass-whiskey fa-lg" style="color: #FFA726;"></i>
+                            </div>
+                            <h6 class="fw-bold">1 Boisson</h6>
+                            <p class="text-muted small mb-0">@(Model.Boisson?.Nom ?? "33cl au choix")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            
+            <form asp-controller="Panier" asp-action="AjouterMenu" method="post">
+                <input type="hidden" name="id" value="@Model.Id" />
+                
+                <div class="quantity-section">
+                    <label class="fw-bold">Quantité :</label>
+                    <div class="quantity-selector">
+                        <button type="button" onclick="changeQty(-1)">−</button>
+                        <input type="number" name="quantite" id="quantite" value="1" min="1" max="10" readonly>
+                        <button type="button" onclick="changeQty(1)">+</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-commander w-100">
+                    <i class="fas fa-cart-plus"></i>
+                    Ajouter au panier
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function changeQty(delta) {
+            const input = document.getElementById('quantite');
+            let value = parseInt(input.value) + delta;
+            if (value < 1) value = 1;
+            if (value > 10) value = 10;
+            input.value = value;
+        }
+    </script>
+}

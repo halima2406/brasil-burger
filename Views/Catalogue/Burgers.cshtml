@@ -1,0 +1,53 @@
+@model List<Produit>
+@{
+    ViewData["Title"] = "Nos Burgers";
+}
+
+<div class="container py-5">
+    <div class="page-header">
+        <h1><i class="fas fa-hamburger me-2" style="color: #FFA726;"></i>Nos Burgers</h1>
+        <p class="text-muted">Découvrez notre gamme de burgers savoureux</p>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="products-grid">
+            @foreach (var burger in Model)
+            {
+                <div class="product-card">
+                    @if (!string.IsNullOrEmpty(burger.Image))
+                    {
+                        <img src="@burger.Image" class="product-image" alt="@burger.Nom">
+                    }
+                    else
+                    {
+                        <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400" class="product-image" alt="@burger.Nom">
+                    }
+                    <div class="product-info">
+                        <h5 class="product-name">@burger.Nom</h5>
+                        <p class="product-price">@burger.Prix.ToString("N0") FCFA</p>
+                        <div class="d-flex gap-2">
+                            <a asp-action="DetailBurger" asp-route-id="@burger.Id" class="btn btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <form asp-controller="Panier" asp-action="AjouterBurger" method="post" class="flex-grow-1">
+                                <input type="hidden" name="id" value="@burger.Id" />
+                                <button type="submit" class="btn-ajouter w-100">
+                                    <i class="fas fa-cart-plus"></i> Ajouter
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="fas fa-hamburger"></i>
+            <h3>Aucun burger disponible</h3>
+            <p>Revenez bientôt pour découvrir nos nouveautés</p>
+        </div>
+    }
+</div>

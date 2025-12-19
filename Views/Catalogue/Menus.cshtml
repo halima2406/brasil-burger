@@ -1,0 +1,80 @@
+@model List<Menu>
+@{
+    ViewData["Title"] = "Nos Menus";
+}
+
+<div class="container">
+
+  
+    <div class="page-header">
+        <h1 class="page-title">Nos Menus Complets</h1>
+        <p class="page-subtitle">Burger + Frites + Boisson à prix avantageux</p>
+    </div>
+
+   
+    <div class="menus-grid">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var menu in Model)
+            {
+                <div class="menu-card">
+                    <div class="menu-image">
+                        @if (!string.IsNullOrEmpty(menu.Image))
+                        {
+                            <img src="@menu.Image" alt="@menu.Nom">
+                        }
+                        else
+                        {
+                            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400" alt="@menu.Nom">
+                        }
+                    </div>
+                    <div class="menu-content">
+                        <h2 class="menu-name">@menu.Nom</h2>
+                        <div class="menu-composition">
+                            <div class="menu-item">
+                                <div class="menu-item-icon">🍔</div>
+                                <div class="menu-item-info">
+                                    <p class="menu-item-name">@(menu.Burger?.Nom ?? "Burger")</p>
+                                    <p class="menu-item-desc">Burger savoureux</p>
+                                </div>
+                            </div>
+                            <div class="menu-item">
+                                <div class="menu-item-icon">🍟</div>
+                                <div class="menu-item-info">
+                                    <p class="menu-item-name">@(menu.Frite?.Nom ?? "Frites")</p>
+                                    <p class="menu-item-desc">Portion généreuse</p>
+                                </div>
+                            </div>
+                            <div class="menu-item">
+                                <div class="menu-item-icon">🥤</div>
+                                <div class="menu-item-info">
+                                    <p class="menu-item-name">@(menu.Boisson?.Nom ?? "Boisson")</p>
+                                    <p class="menu-item-desc">33cl bien frais</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="menu-footer">
+                            <p class="menu-price">@menu.Prix.ToString("N0") <span>FCFA</span></p>
+                            <form asp-controller="Panier" asp-action="AjouterMenu" method="post">
+                                <input type="hidden" name="id" value="@menu.Id" />
+                                <button type="submit" class="menu-add-btn">
+                                    <i class="fas fa-plus"></i>
+                                    Ajouter
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="cart-empty" style="grid-column: 1/-1;">
+                <i class="fas fa-utensils"></i>
+                <h3>Aucun menu disponible</h3>
+                <p>Les menus seront bientôt disponibles</p>
+            </div>
+        }
+    </div>
+
+</div>

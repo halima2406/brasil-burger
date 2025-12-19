@@ -1,0 +1,122 @@
+@model Produit
+@{
+    ViewData["Title"] = Model.Nom;
+}
+
+<div class="container py-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Accueil</a></li>
+            <li class="breadcrumb-item"><a href="/Catalogue/Burgers" class="text-decoration-none">Burgers</a></li>
+            <li class="breadcrumb-item active">@Model.Nom</li>
+        </ol>
+    </nav>
+
+    <div class="detail-container">
+       
+        <div>
+            @if (!string.IsNullOrEmpty(Model.Image))
+            {
+                <img src="@Model.Image" alt="@Model.Nom" class="detail-image">
+            }
+            else
+            {
+                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600" alt="@Model.Nom" class="detail-image">
+            }
+        </div>
+
+       
+        <div class="detail-info">
+            <h1>@Model.Nom</h1>
+            <p class="detail-prix">@Model.Prix.ToString("N0") FCFA</p>
+
+         
+            <div class="ingredients-section">
+                <h3><i class="fas fa-list-ul me-2"></i>Ingrédients</h3>
+                <div class="ingredients-list">
+                    <div class="ingredient-item">
+                        <i class="fas fa-bread-slice"></i>
+                        <span>Pain brioché</span>
+                    </div>
+                    <div class="ingredient-item">
+                        <i class="fas fa-drumstick-bite"></i>
+                        <span>Steak de bœuf</span>
+                    </div>
+                    <div class="ingredient-item">
+                        <i class="fas fa-cheese"></i>
+                        <span>Cheddar</span>
+                    </div>
+                    <div class="ingredient-item">
+                        <i class="fas fa-leaf"></i>
+                        <span>Salade</span>
+                    </div>
+                    <div class="ingredient-item">
+                        <i class="fas fa-apple-alt"></i>
+                        <span>Tomate</span>
+                    </div>
+                    <div class="ingredient-item">
+                        <i class="fas fa-ring"></i>
+                        <span>Oignons</span>
+                    </div>
+                    <div class="ingredient-item">
+                        <i class="fas fa-tint"></i>
+                        <span>Sauce maison</span>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="nutrition-section">
+                <h3><i class="fas fa-fire-alt me-2"></i>Valeurs nutritionnelles</h3>
+                <div class="nutrition-grid">
+                    <div class="nutrition-item">
+                        <div class="value">520</div>
+                        <div class="label">kcal</div>
+                    </div>
+                    <div class="nutrition-item">
+                        <div class="value">28g</div>
+                        <div class="label">Protéines</div>
+                    </div>
+                    <div class="nutrition-item">
+                        <div class="value">35g</div>
+                        <div class="label">Glucides</div>
+                    </div>
+                    <div class="nutrition-item">
+                        <div class="value">32g</div>
+                        <div class="label">Lipides</div>
+                    </div>
+                </div>
+            </div>
+
+            <form asp-controller="Panier" asp-action="AjouterBurger" method="post">
+                <input type="hidden" name="id" value="@Model.Id" />
+                
+                <div class="quantity-section">
+                    <label class="fw-bold">Quantité :</label>
+                    <div class="quantity-selector">
+                        <button type="button" onclick="changeQty(-1)">−</button>
+                        <input type="number" name="quantite" id="quantite" value="1" min="1" max="10" readonly>
+                        <button type="button" onclick="changeQty(1)">+</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-commander w-100">
+                    <i class="fas fa-cart-plus"></i>
+                    Ajouter au panier
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function changeQty(delta) {
+            const input = document.getElementById('quantite');
+            let value = parseInt(input.value) + delta;
+            if (value < 1) value = 1;
+            if (value > 10) value = 10;
+            input.value = value;
+        }
+    </script>
+}
