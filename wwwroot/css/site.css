@@ -29,3 +29,204 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+
+/* ===== ZONES LIVRAISON ===== */
+
+.zones-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+}
+.zone-btn {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.zone-btn:hover {
+    border-color: #2e7d32;
+}
+.zone-btn.selected {
+    border-color: #2e7d32;
+    background: rgba(46,125,50,0.1);
+}
+.zone-name {
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 5px;
+}
+.zone-price {
+    color: #2e7d32;
+    font-weight: 700;
+    font-size: 18px;
+}
+#btnSubmit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+/* ===== DETAIL COMMANDE ===== */
+.detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 30px;
+}
+.detail-main .order-card {
+    margin-bottom: 25px;
+}
+.card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 20px;
+    color: #1a1a1a;
+}
+.card-title i {
+    color: #2e7d32;
+    margin-right: 10px;
+}
+.card-header-flex .card-title {
+    margin: 0;
+}
+.livreur-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.livreur-avatar {
+    width: 60px;
+    height: 60px;
+    background: #2e7d32;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+}
+.livreur-details {
+    flex: 1;
+}
+.livreur-details h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 5px;
+}
+.livreur-details p {
+    color: #666;
+    margin: 0;
+}
+.btn-call {
+    background: #2e7d32;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+.btn-call:hover {
+    background: #1b5e20;
+    color: white;
+}
+.zone-name {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+}
+.article-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+.article-row:last-child {
+    border-bottom: none;
+}
+.article-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.article-qty {
+    background: #2e7d32;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.article-info div strong {
+    display: block;
+    font-size: 15px;
+}
+.article-info div small {
+    color: #666;
+}
+.article-price {
+    font-weight: 600;
+    color: #2e7d32;
+}
+.payment-success {
+    background: rgba(46, 125, 50, 0.1);
+    padding: 15px;
+    border-radius: 12px;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.payment-success i {
+    color: #2e7d32;
+    font-size: 24px;
+}
+.payment-success small {
+    color: #666;
+    display: block;
+}
+.payment-success strong {
+    color: #1a1a1a;
+}
+.btn-back {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    padding: 14px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 25px;
+    color: #666;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+.btn-back:hover {
+    border-color: #2e7d32;
+    color: #2e7d32;
+}
+.detail-sidebar .cart-summary {
+    position: sticky;
+    top: 100px;
+}
+
+@media (max-width: 900px) {
+    .detail-layout {
+        grid-template-columns: 1fr;
+    }
+    .detail-sidebar .cart-summary {
+        position: static;
+    }
+}
