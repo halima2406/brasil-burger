@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Accueil";
     var burgers = ViewBag.Burgers as List<Produit> ?? new List<Produit>();
     var menus = ViewBag.Menus as List<Menu> ?? new List<Menu>();
@@ -6,7 +6,7 @@
 
 <div class="container">
 
-  
+    <!-- Section Burgers Populaires -->
     @if (burgers.Any())
     {
         <section class="products-section">
@@ -43,6 +43,7 @@
         </section>
     }
 
+    <!-- Section Menus -->
     @if (menus.Any())
     {
         <section class="products-section">
