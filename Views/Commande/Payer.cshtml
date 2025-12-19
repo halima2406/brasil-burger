@@ -1,0 +1,98 @@
+@model Commande
+@{
+    ViewData["Title"] = "Paiement";
+}
+
+<div class="container">
+
+   
+    <div class="page-header">
+        <h1 class="page-title">Paiement</h1>
+        <p class="page-subtitle">Choisissez votre mode de paiement</p>
+    </div>
+
+    <div class="cart-layout">
+        
+       
+        <div>
+            <h3 class="section-title" style="margin-bottom: 20px;">Mode de paiement</h3>
+            
+            <div class="payment-methods">
+            
+                <form asp-action="PayerWave" method="post">
+                    <div class="payment-card" onclick="this.closest('form').submit()" style="cursor: pointer;">
+                        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #1DC9FF, #00A3E0); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                            <i class="fas fa-mobile-alt fa-2x" style="color: white;"></i>
+                        </div>
+                        <h4 class="payment-name">Wave</h4>
+                        <p style="color: var(--gray); font-size: 13px;">Paiement instantané</p>
+                    </div>
+                </form>
+
+              
+                <form asp-action="PayerOM" method="post">
+                    <div class="payment-card" onclick="this.closest('form').submit()" style="cursor: pointer;">
+                        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #FF6600, #FF8533); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                            <i class="fas fa-mobile-alt fa-2x" style="color: white;"></i>
+                        </div>
+                        <h4 class="payment-name">Orange Money</h4>
+                        <p style="color: var(--gray); font-size: 13px;">Paiement sécurisé</p>
+                    </div>
+                </form>
+            </div>
+
+            <div class="alert alert-success" style="margin-top: 20px;">
+                <i class="fas fa-info-circle"></i>
+                Cliquez sur une méthode de paiement pour continuer
+            </div>
+        </div>
+
+     
+        <div class="cart-summary">
+            <h2 class="summary-title">Commande #@Model.Id.ToString("D6")</h2>
+            
+            <div class="summary-row">
+                <span class="summary-label">Mode</span>
+                <span class="summary-value">
+                    @if (Model.TypeConsommation == "SUR_PLACE")
+                    {
+                        <text>Sur place</text>
+                    }
+                    else if (Model.TypeConsommation == "A_EMPORTER")
+                    {
+                        <text>À emporter</text>
+                    }
+                    else
+                    {
+                        <text>Livraison</text>
+                    }
+                </span>
+            </div>
+
+            @if (Model.Zone != null)
+            {
+                <div class="summary-row">
+                    <span class="summary-label">Zone</span>
+                    <span class="summary-value">@Model.Zone.Quartier</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Livraison</span>
+                    <span class="summary-value">@Model.Zone.Prix.ToString("N0") FCFA</span>
+                </div>
+            }
+
+            <div class="summary-divider"></div>
+
+            <div class="summary-total">
+                <span class="summary-total-label">Total à payer</span>
+                <span class="summary-total-value">@Model.MontantTotal.ToString("N0") FCFA</span>
+            </div>
+
+            <p class="summary-note">
+                <i class="fas fa-shield-alt"></i> Paiement 100% sécurisé
+            </p>
+        </div>
+
+    </div>
+
+</div>

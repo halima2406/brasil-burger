@@ -1,0 +1,192 @@
+@model Commande
+@{
+    ViewData["Title"] = "Suivi Commande";
+}
+
+<div class="container">
+
+    <div class="page-header">
+        <h1 class="page-title">Commande #CMD-@Model.Id.ToString("D6")</h1>
+        <p class="page-subtitle">Suivez l'état de votre commande en temps réel</p>
+    </div>
+
+    <div class="detail-layout">
+        
+    
+        <div class="detail-main">
+        
+            <div class="order-card">
+                <div class="card-header-flex">
+                    <h3 class="card-title">
+                        <i class="fas fa-truck"></i>
+                        Suivi de commande
+                    </h3>
+                    @switch (Model.Statut)
+                    {
+                        case "EN_COURS":
+                            <span class="badge-statut badge-en-cours">En préparation</span>
+                            break;
+                        case "VALIDEE":
+                            <span class="badge-statut badge-validee">Validée</span>
+                            break;
+                        case "EN_LIVRAISON":
+                            <span class="badge-statut badge-livraison">En livraison</span>
+                            break;
+                        case "TERMINEE":
+                            <span class="badge-statut badge-terminee">Terminée</span>
+                            break;
+                        case "ANNULEE":
+                            <span class="badge-statut badge-annulee">Annulée</span>
+                            break;
+                    }
+                </div>
+
+                <div class="timeline">
+                    <div class="timeline-item @(Model.Statut != "ANNULEE" ? "completed" : "")">
+                        <h4>Commande confirmée</h4>
+                        <p>@Model.DateCommande.ToString("dd/MM/yyyy à HH:mm")</p>
+                    </div>
+                    <div class="timeline-item @(Model.Statut == "VALIDEE" || Model.Statut == "EN_LIVRAISON" || Model.Statut == "TERMINEE" ? "completed" : (Model.Statut == "EN_COURS" ? "active" : ""))">
+                        <h4>En préparation</h4>
+                        <p>Votre commande est en cours de préparation</p>
+                    </div>
+                    @if (Model.TypeConsommation == "LIVRAISON")
+                    {
+                        <div class="timeline-item @(Model.Statut == "EN_LIVRAISON" ? "active" : (Model.Statut == "TERMINEE" ? "completed" : ""))">
+                            <h4>En livraison</h4>
+                            <p>Le livreur est en route</p>
+                        </div>
+                    }
+                    <div class="timeline-item @(Model.Statut == "TERMINEE" ? "completed" : "")">
+                        <h4>@(Model.TypeConsommation == "LIVRAISON" ? "Livrée" : "Prête")</h4>
+                        <p>@(Model.TypeConsommation == "LIVRAISON" ? "Votre commande a été livrée" : "Votre commande est prête")</p>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.TypeConsommation == "LIVRAISON" && Model.Livreur != null)
+            {
+                <!-- Livreur -->
+                <div class="order-card">
+                    <h3 class="card-title">
+                        <i class="fas fa-motorcycle"></i>
+                        Votre livreur
+                    </h3>
+                    <div class="livreur-info">
+                        <div class="livreur-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="livreur-details">
+                            <h4>@Model.Livreur.Nom</h4>
+                            <p><i class="fas fa-phone"></i> @Model.Livreur.Telephone</p>
+                        </div>
+                        <a href="tel:@Model.Livreur.Telephone" class="btn-call">
+                            <i class="fas fa-phone"></i> Appeler
+                        </a>
+                    </div>
+                </div>
+            }
+
+            @if (Model.TypeConsommation == "LIVRAISON" && Model.Zone != null)
+            {
+         
+                <div class="order-card">
+                    <h3 class="card-title">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Zone de livraison
+                    </h3>
+                    <p class="zone-name">@Model.Zone.Quartier</p>
+                </div>
+            }
+
+    
+            <div class="order-card">
+                <h3 class="card-title">
+                    <i class="fas fa-list"></i>
+                    Articles commandés
+                </h3>
+                @if (Model.LignesCommande != null)
+                {
+                    @foreach (var ligne in Model.LignesCommande)
+                    {
+                        <div class="article-row">
+                            <div class="article-info">
+                                <span class="article-qty">x@(ligne.Quantite)</span>
+                                <div>
+                                    <strong>@(ligne.Produit?.Nom ?? ligne.Menu?.Nom ?? "Article")</strong>
+                                    <small>@ligne.TypeLigne</small>
+                                </div>
+                            </div>
+                            <span class="article-price">@ligne.MontantTotal.ToString("N0") FCFA</span>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+     
+        <div class="detail-sidebar">
+            <div class="cart-summary">
+                <h2 class="summary-title">Récapitulatif</h2>
+                
+                <div class="summary-row">
+                    <span class="summary-label">Date</span>
+                    <span class="summary-value">@Model.DateCommande.ToString("dd/MM/yyyy")</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Heure</span>
+                    <span class="summary-value">@Model.DateCommande.ToString("HH:mm")</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Mode</span>
+                    <span class="summary-value">
+                        @if (Model.TypeConsommation == "SUR_PLACE")
+                        {
+                            <text>Sur place</text>
+                        }
+                        else if (Model.TypeConsommation == "A_EMPORTER")
+                        {
+                            <text>À emporter</text>
+                        }
+                        else
+                        {
+                            <text>Livraison</text>
+                        }
+                    </span>
+                </div>
+                @if (Model.Zone != null)
+                {
+                    <div class="summary-row">
+                        <span class="summary-label">Frais livraison</span>
+                        <span class="summary-value">@Model.Zone.Prix.ToString("N0") FCFA</span>
+                    </div>
+                }
+
+                <div class="summary-divider"></div>
+
+                <div class="summary-total">
+                    <span class="summary-total-label">Total</span>
+                    <span class="summary-total-value">@Model.MontantTotal.ToString("N0") FCFA</span>
+                </div>
+
+                @if (Model.Paiement != null)
+                {
+                    <div class="payment-success">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <small>Payé via</small>
+                            <strong>@(Model.Paiement.TypePaiement == "WAVE" ? "Wave" : "Orange Money")</strong>
+                        </div>
+                    </div>
+                }
+
+                <a href="/Commande/MesCommandes" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> Retour aux commandes
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+

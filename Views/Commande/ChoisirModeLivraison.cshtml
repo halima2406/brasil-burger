@@ -1,0 +1,199 @@
+@{
+    ViewData["Title"] = "Mode de consommation";
+    var zones = ViewBag.Zones as List<Zone>;
+    var panier = ViewBag.Panier as Panier;
+    var basePrix = panier?.Total ?? 0;
+}
+
+<div class="container">
+
+    <div class="page-header">
+        <h1 class="page-title">Mode de consommation</h1>
+        <p class="page-subtitle">Comment souhaitez-vous récupérer votre commande ?</p>
+    </div>
+
+    <form action="/Commande/PasserCommande" method="post" id="commandeForm">
+        <input type="hidden" name="typeConsommation" id="typeConsommation" value="">
+        <input type="hidden" name="zoneId" id="zoneId" value="">
+        
+      
+        <div class="consumption-options">
+            <button type="button" class="consumption-card" id="btn_surplace">
+                <div class="consumption-icon">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <h3 class="consumption-title">Sur place</h3>
+                <p class="consumption-desc">Dégustez votre commande au restaurant</p>
+            </button>
+            
+            <button type="button" class="consumption-card" id="btn_emporter">
+                <div class="consumption-icon">
+                    <i class="fas fa-bag-shopping"></i>
+                </div>
+                <h3 class="consumption-title">À emporter</h3>
+                <p class="consumption-desc">Récupérez votre commande au comptoir</p>
+            </button>
+            
+            <button type="button" class="consumption-card" id="btn_livraison">
+                <div class="consumption-icon">
+                    <i class="fas fa-motorcycle"></i>
+                </div>
+                <h3 class="consumption-title">Livraison</h3>
+                <p class="consumption-desc">Faites-vous livrer à domicile</p>
+            </button>
+        </div>
+
+        <div id="zonesSection" style="display: none; margin: 30px 0;">
+            <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 15px;">Choisissez votre zone de livraison</h3>
+            <div class="zones-grid">
+                @if (zones != null && zones.Any())
+                {
+                    @foreach (var zone in zones)
+                    {
+                        <button type="button" class="zone-btn" data-id="@zone.Id" data-prix="@zone.Prix">
+                            <span class="zone-name">@zone.Quartier</span>
+                            <span class="zone-price">@zone.Prix.ToString("N0") FCFA</span>
+                        </button>
+                    }
+                }
+            </div>
+        </div>
+
+      
+        <div class="cart-summary" style="max-width: 400px; margin: 0 auto;">
+            <h2 class="summary-title">Votre commande</h2>
+            
+            @if (panier != null && panier.Articles.Any())
+            {
+                @foreach (var item in panier.Articles)
+                {
+                    <div class="summary-row">
+                        <span class="summary-label">@item.Quantite x @item.Nom</span>
+                        <span class="summary-value">@item.Total.ToString("N0") FCFA</span>
+                    </div>
+                }
+            }
+
+            <div class="summary-divider"></div>
+
+            <div class="summary-row" id="livraisonRow" style="display: none;">
+                <span class="summary-label">Frais de livraison</span>
+                <span class="summary-value" id="livraisonPrix">0 FCFA</span>
+            </div>
+
+            <div class="summary-total">
+                <span class="summary-total-label">Total</span>
+                <span class="summary-total-value" id="totalPrix">@basePrix.ToString("N0") FCFA</span>
+            </div>
+
+            <button type="submit" class="summary-btn" id="btnSubmit" disabled>
+                Continuer <i class="fas fa-arrow-right"></i>
+            </button>
+            
+            <p id="helpMessage" style="text-align: center; margin-top: 15px; color: #666; font-size: 14px;">
+                👆 Cliquez sur un mode ci-dessus
+            </p>
+        </div>
+    </form>
+
+</div>
+
+
+
+<script>
+
+var basePrix = @((int)basePrix);
+var livraisonPrix = 0;
+var modeChoisi = null;
+
+
+window.onload = function() {
+    console.log('Page chargée, initialisation...');
+    
+    
+    document.getElementById('btn_surplace').onclick = function() {
+        console.log('Sur place cliqué');
+        selectMode('SUR_PLACE', this);
+    };
+    
+  
+    document.getElementById('btn_emporter').onclick = function() {
+        console.log('À emporter cliqué');
+        selectMode('A_EMPORTER', this);
+    };
+    
+ 
+    document.getElementById('btn_livraison').onclick = function() {
+        console.log('Livraison cliqué');
+        selectMode('LIVRAISON', this);
+    };
+    
+   
+    var zoneBtns = document.querySelectorAll('.zone-btn');
+    zoneBtns.forEach(function(btn) {
+        btn.onclick = function() {
+            var zoneId = this.getAttribute('data-id');
+            var prix = parseInt(this.getAttribute('data-prix'));
+            console.log('Zone cliquée:', zoneId, prix);
+            selectZone(this, zoneId, prix);
+        };
+    });
+};
+
+function selectMode(mode, btn) {
+    modeChoisi = mode;
+    document.getElementById('typeConsommation').value = mode;
+    
+   
+    document.querySelectorAll('.consumption-card').forEach(function(card) {
+        card.classList.remove('selected');
+    });
+    
+   
+    btn.classList.add('selected');
+    
+
+    if (mode === 'LIVRAISON') {
+        document.getElementById('zonesSection').style.display = 'block';
+        document.getElementById('btnSubmit').disabled = true;
+        document.getElementById('helpMessage').textContent = '📍 Choisissez une zone de livraison';
+    } else {
+        document.getElementById('zonesSection').style.display = 'none';
+        document.getElementById('livraisonRow').style.display = 'none';
+        livraisonPrix = 0;
+        updateTotal();
+        
+     
+        document.getElementById('btnSubmit').disabled = false;
+        document.getElementById('helpMessage').style.display = 'none';
+    }
+}
+
+function selectZone(btn, zoneId, prix) {
+    document.getElementById('zoneId').value = zoneId;
+    livraisonPrix = prix;
+    
+ 
+    document.querySelectorAll('.zone-btn').forEach(function(z) {
+        z.classList.remove('selected');
+    });
+    
+  
+    btn.classList.add('selected');
+    
+
+    document.getElementById('livraisonPrix').textContent = prix.toLocaleString('fr-FR') + ' FCFA';
+    document.getElementById('livraisonRow').style.display = 'flex';
+    
+    updateTotal();
+    
+  
+    document.getElementById('btnSubmit').disabled = false;
+    document.getElementById('helpMessage').style.display = 'none';
+}
+
+function updateTotal() {
+    var total = basePrix + livraisonPrix;
+    document.getElementById('totalPrix').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+}
+</script>

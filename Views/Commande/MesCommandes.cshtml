@@ -1,0 +1,96 @@
+@model List<Commande>
+@{
+    ViewData["Title"] = "Mes Commandes";
+    var filter = ViewBag.Filter as string ?? "toutes";
+}
+
+<div class="container">
+
+  
+    <div class="page-header">
+        <h1 class="page-title">Mes Commandes</h1>
+        <p class="page-subtitle">Suivez l'état de vos commandes</p>
+    </div>
+
+    
+    <div class="orders-tabs">
+        <a href="?filter=toutes" class="order-tab @(filter == "toutes" ? "active" : "")">Toutes</a>
+        <a href="?filter=en_cours" class="order-tab @(filter == "en_cours" ? "active" : "")">En cours</a>
+        <a href="?filter=terminees" class="order-tab @(filter == "terminees" ? "active" : "")">Terminées</a>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        @foreach (var commande in Model)
+        {
+            <div class="order-card">
+                <div class="order-header">
+                    <div>
+                        <span class="order-number">#CMD-@commande.Id.ToString("D6")</span>
+                        <span class="order-date" style="margin-left: 15px;">
+                            <i class="fas fa-calendar"></i> @commande.DateCommande.ToString("dd/MM/yyyy à HH:mm")
+                        </span>
+                    </div>
+                    @switch (commande.Statut)
+                    {
+                        case "EN_COURS":
+                            <span class="order-status status-preparing">En préparation</span>
+                            break;
+                        case "VALIDEE":
+                            <span class="order-status status-pending">Validée</span>
+                            break;
+                        case "EN_LIVRAISON":
+                            <span class="order-status status-delivery">En livraison</span>
+                            break;
+                        case "TERMINEE":
+                            <span class="order-status status-completed">Terminée</span>
+                            break;
+                        default:
+                            <span class="order-status">@commande.Statut</span>
+                            break;
+                    }
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="color: var(--gray);">
+                            @if (commande.TypeConsommation == "SUR_PLACE")
+                            {
+                                <i class="fas fa-utensils"></i> <text>Sur place</text>
+                            }
+                            else if (commande.TypeConsommation == "A_EMPORTER")
+                            {
+                                <i class="fas fa-bag-shopping"></i> <text>À emporter</text>
+                            }
+                            else
+                            {
+                                <i class="fas fa-motorcycle"></i> <text>Livraison</text>
+                            }
+                        </span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 20px;">
+                        <span class="summary-total-value" style="font-size: 18px;">@commande.MontantTotal.ToString("N0") FCFA</span>
+                        <a asp-action="Detail" asp-route-id="@commande.Id" class="menu-add-btn">
+                            <i class="fas fa-eye"></i> Voir
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="cart-items">
+            <div class="cart-empty">
+                <i class="fas fa-clipboard-list"></i>
+                <h3>Aucune commande</h3>
+                <p>Vous n'avez pas encore passé de commande</p>
+                <a href="/Catalogue/Index" class="cart-empty-btn">
+                    <i class="fas fa-hamburger"></i>
+                    Commander maintenant
+                </a>
+            </div>
+        </div>
+    }
+
+</div>

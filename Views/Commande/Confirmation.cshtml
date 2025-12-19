@@ -1,0 +1,104 @@
+@model Commande
+@{
+    ViewData["Title"] = "Commande Confirmée";
+}
+
+<div class="container">
+    <div class="confirmation-container">
+        
+        <div class="confirmation-icon">
+            <i class="fas fa-check"></i>
+        </div>
+        
+        <h1 class="confirmation-title">Commande Confirmée !</h1>
+        <p class="confirmation-number">
+            Commande N° <strong>#CMD-@Model.Id.ToString("D6")</strong>
+        </p>
+
+       ]
+        <div class="order-card" style="text-align: left; max-width: 500px; margin: 30px auto;">
+            <div class="summary-row">
+                <span class="summary-label">Date</span>
+                <span class="summary-value">@Model.DateCommande.ToString("dd/MM/yyyy à HH:mm")</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Mode</span>
+                <span class="summary-value">
+                    @if (Model.TypeConsommation == "SUR_PLACE")
+                    {
+                        <text>Sur place</text>
+                    }
+                    else if (Model.TypeConsommation == "A_EMPORTER")
+                    {
+                        <text>À emporter</text>
+                    }
+                    else
+                    {
+                        <text>Livraison</text>
+                    }
+                </span>
+            </div>
+            @if (Model.Paiement != null)
+            {
+                <div class="summary-row">
+                    <span class="summary-label">Paiement</span>
+                    <span class="summary-value">
+                        @if (Model.Paiement.TypePaiement == "WAVE")
+                        {
+                            <text>Wave</text>
+                        }
+                        else
+                        {
+                            <text>Orange Money</text>
+                        }
+                        ✓
+                    </span>
+                </div>
+            }
+            <div class="summary-divider"></div>
+            <div class="summary-total">
+                <span class="summary-total-label">Total payé</span>
+                <span class="summary-total-value">@Model.MontantTotal.ToString("N0") FCFA</span>
+            </div>
+        </div>
+
+      
+        <div class="order-card" style="text-align: left; max-width: 500px; margin: 0 auto 30px;">
+            <h3 style="margin-bottom: 20px; font-size: 16px;">Suivi de commande</h3>
+            <div class="timeline">
+                <div class="timeline-item completed">
+                    <h4>Commande confirmée</h4>
+                    <p>@Model.DateCommande.ToString("dd/MM/yyyy à HH:mm")</p>
+                </div>
+                <div class="timeline-item active">
+                    <h4>En préparation</h4>
+                    <p>Votre commande est en cours</p>
+                </div>
+                @if (Model.TypeConsommation == "LIVRAISON")
+                {
+                    <div class="timeline-item">
+                        <h4>En livraison</h4>
+                        <p>En attente</p>
+                    </div>
+                }
+                <div class="timeline-item">
+                    <h4>@(Model.TypeConsommation == "LIVRAISON" ? "Livrée" : "Prête")</h4>
+                    <p>En attente</p>
+                </div>
+            </div>
+        </div>
+
+       
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <a asp-action="Detail" asp-route-id="@Model.Id" class="summary-btn" style="width: auto; padding: 16px 32px;">
+                <i class="fas fa-eye"></i>
+                Suivre ma commande
+            </a>
+            <a href="/" class="filter-tab">
+                <i class="fas fa-home"></i>
+                Accueil
+            </a>
+        </div>
+
+    </div>
+</div>

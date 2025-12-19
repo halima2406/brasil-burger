@@ -1,0 +1,102 @@
+@{
+    ViewData["Title"] = "Paiement";
+    var total = ViewBag.Total ?? 0m;
+}
+
+<div class="container">
+    <div class="paiement-container">
+        <div class="paiement-card">
+
+            <div class="paiement-header">
+                <h1 class="paiement-title">Paiement</h1>
+                <p class="paiement-subtitle">Choisissez votre mode de paiement</p>
+            </div>
+
+            <form asp-action="ValiderPaiement" method="post">
+
+                <div class="paiement-options">
+
+                  
+                    <label class="paiement-option" onclick="selectPayment(this, 'WAVE')">
+                        <input type="radio" name="MethodePaiement" value="WAVE" style="display: none;">
+                        <div class="paiement-logo wave">Wave</div>
+                        <div class="paiement-info">
+                            <h4>Wave</h4>
+                            <p>Paiement mobile rapide et sécurisé</p>
+                        </div>
+                        <div class="paiement-check">
+                            <i class="fas fa-check" style="display: none;"></i>
+                        </div>
+                    </label>
+
+                   
+                    <label class="paiement-option" onclick="selectPayment(this, 'ORANGE_MONEY')">
+                        <input type="radio" name="MethodePaiement" value="ORANGE_MONEY" style="display: none;">
+                        <div class="paiement-logo om">OM</div>
+                        <div class="paiement-info">
+                            <h4>Orange Money</h4>
+                            <p>Paiement via Orange Money</p>
+                        </div>
+                        <div class="paiement-check">
+                            <i class="fas fa-check" style="display: none;"></i>
+                        </div>
+                    </label>
+
+                </div>
+
+                
+                <div class="paiement-phone">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-phone"></i>
+                            Numéro de téléphone
+                        </label>
+                        <div class="form-input-container" style="display: flex; gap: 10px;">
+                            <input type="text" class="form-input" value="+221" style="width: 80px; text-align: center;" readonly>
+                            <input type="tel" name="Telephone" class="form-input" placeholder="77 123 45 67" required style="flex: 1;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="paiement-summary">
+                    <div class="mode-summary-row">
+                        <span>Montant total à payer</span>
+                        <span style="font-size: 20px; font-weight: 700; color: var(--primary);">@(((decimal)total).ToString("N0")) FCFA</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="paiement-btn" id="payBtn" disabled>
+                    <i class="fas fa-lock"></i>
+                    Payer @(((decimal)total).ToString("N0")) FCFA
+                </button>
+
+                <p class="paiement-note">
+                    <i class="fas fa-shield-alt"></i>
+                    Paiement 100% sécurisé
+                </p>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function selectPayment(element, method) {
+        
+        document.querySelectorAll('.paiement-option').forEach(opt => {
+            opt.classList.remove('selected');
+            opt.querySelector('.fa-check').style.display = 'none';
+        });
+        
+       
+        element.classList.add('selected');
+        element.querySelector('input').checked = true;
+        element.querySelector('.fa-check').style.display = 'block';
+        
+      
+        document.getElementById('payBtn').disabled = false;
+    }
+</script>
+}

@@ -1,0 +1,98 @@
+@model List<Commande>
+@{
+    ViewData["Title"] = "Historique des commandes";
+}
+
+<div class="container py-5">
+    <div class="page-header">
+        <h1><i class="fas fa-history me-2" style="color: #2D7A3E;"></i>Historique</h1>
+        <p class="text-muted">Consultez vos commandes passées</p>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        @foreach (var commande in Model)
+        {
+            <div class="commande-card">
+                <div class="commande-header">
+                    <div>
+                        <span class="commande-numero">#CMD-@commande.Id.ToString("D6")</span>
+                        <span class="commande-date ms-3">
+                            <i class="fas fa-calendar me-1"></i>@commande.DateCommande.ToString("dd/MM/yyyy à HH:mm")
+                        </span>
+                    </div>
+                    <div>
+                        @if (commande.Statut == "TERMINEE")
+                        {
+                            <span class="badge-statut badge-terminee">
+                                <i class="fas fa-check-double me-1"></i>Terminée
+                            </span>
+                        }
+                        else if (commande.Statut == "ANNULEE")
+                        {
+                            <span class="badge-statut badge-annulee">
+                                <i class="fas fa-times me-1"></i>Annulée
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center text-muted mb-2">
+                            @if (commande.TypeConsommation == "SUR_PLACE")
+                            {
+                                <i class="fas fa-utensils me-2"></i>
+                                <span>Sur place</span>
+                            }
+                            else if (commande.TypeConsommation == "A_EMPORTER")
+                            {
+                                <i class="fas fa-shopping-bag me-2"></i>
+                                <span>À emporter</span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-motorcycle me-2"></i>
+                                <span>Livraison</span>
+                            }
+                        </div>
+                        @if (commande.LignesCommande != null)
+                        {
+                            <small class="text-muted">
+                                @commande.LignesCommande.Sum(l => l.Quantite) article(s)
+                            </small>
+                        }
+                    </div>
+                    <div class="col-md-3 text-md-center">
+                        <span class="prix">@commande.MontantTotal.ToString("N0") FCFA</span>
+                    </div>
+                    <div class="col-md-3 text-md-end mt-3 mt-md-0">
+                        <a asp-action="Detail" asp-route-id="@commande.Id" class="btn btn-outline-primary">
+                            <i class="fas fa-eye me-1"></i> Voir détails
+                        </a>
+                        @if (commande.Statut == "TERMINEE")
+                        {
+                            <form asp-controller="Panier" asp-action="RecommanderCommande" method="post" class="d-inline">
+                                <input type="hidden" name="commandeId" value="@commande.Id" />
+                                <button type="submit" class="btn btn-primary ms-2">
+                                    <i class="fas fa-redo me-1"></i> Recommander
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="fas fa-history"></i>
+            <h3>Aucun historique</h3>
+            <p class="mb-4">Vous n'avez pas encore de commandes terminées</p>
+            <a href="/Catalogue/Index" class="btn btn-primary btn-lg">
+                <i class="fas fa-hamburger me-2"></i>Commander maintenant
+            </a>
+        </div>
+    }
+</div>
