@@ -1,8 +1,119 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Accueil";
+    var burgers = ViewBag.Burgers as List<Produit> ?? new List<Produit>();
+    var menus = ViewBag.Menus as List<Menu> ?? new List<Menu>();
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container">
+
+  
+    @if (burgers.Any())
+    {
+        <section class="products-section">
+            <div class="section-header">
+                <h2 class="section-title">Nos Burgers Populaires</h2>
+                <a href="/Catalogue/Index?filter=burgers" class="filter-tab">Voir tout <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="products-grid">
+                @foreach (var burger in burgers.Take(4))
+                {
+                    <div class="product-card">
+                        <div class="product-image">
+                            @if (!string.IsNullOrEmpty(burger.Image))
+                            {
+                                <img src="@burger.Image" alt="@burger.Nom">
+                            }
+                            else
+                            {
+                                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400" alt="@burger.Nom">
+                            }
+                            <form asp-controller="Panier" asp-action="AjouterProduit" method="post" style="display: contents;">
+                                <input type="hidden" name="id" value="@burger.Id" />
+                                <button type="submit" class="product-add-btn"><i class="fas fa-plus"></i></button>
+                            </form>
+                        </div>
+                        <div class="product-info">
+                            <h3 class="product-name">@burger.Nom</h3>
+                            <p class="product-desc">Burger savoureux</p>
+                            <p class="product-price">@burger.Prix.ToString("N0") <span>FCFA</span></p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    @if (menus.Any())
+    {
+        <section class="products-section">
+            <div class="section-header">
+                <h2 class="section-title">Nos Menus</h2>
+                <a href="/Catalogue/Menus" class="filter-tab">Voir tout <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="menus-grid">
+                @foreach (var menu in menus.Take(2))
+                {
+                    <div class="menu-card">
+                        <div class="menu-image">
+                            @if (!string.IsNullOrEmpty(menu.Image))
+                            {
+                                <img src="@menu.Image" alt="@menu.Nom">
+                            }
+                            else
+                            {
+                                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400" alt="@menu.Nom">
+                            }
+                        </div>
+                        <div class="menu-content">
+                            <h2 class="menu-name">@menu.Nom</h2>
+                            <div class="menu-composition">
+                                <div class="menu-item">
+                                    <div class="menu-item-icon">🍔</div>
+                                    <div class="menu-item-info">
+                                        <p class="menu-item-name">@(menu.Burger?.Nom ?? "Burger")</p>
+                                    </div>
+                                </div>
+                                <div class="menu-item">
+                                    <div class="menu-item-icon">🍟</div>
+                                    <div class="menu-item-info">
+                                        <p class="menu-item-name">@(menu.Frite?.Nom ?? "Frites")</p>
+                                    </div>
+                                </div>
+                                <div class="menu-item">
+                                    <div class="menu-item-icon">🥤</div>
+                                    <div class="menu-item-info">
+                                        <p class="menu-item-name">@(menu.Boisson?.Nom ?? "Boisson")</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="menu-footer">
+                                <p class="menu-price">@menu.Prix.ToString("N0") <span>FCFA</span></p>
+                                <form asp-controller="Panier" asp-action="AjouterMenu" method="post">
+                                    <input type="hidden" name="id" value="@menu.Id" />
+                                    <button type="submit" class="menu-add-btn">
+                                        <i class="fas fa-plus"></i>
+                                        Ajouter
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    @if (!burgers.Any() && !menus.Any())
+    {
+        <div class="cart-empty" style="margin-top: 50px;">
+            <i class="fas fa-hamburger"></i>
+            <h3>Bienvenue chez Brasil Burger</h3>
+            <p>Découvrez notre catalogue de délicieux burgers</p>
+            <a href="/Catalogue/Index" class="cart-empty-btn">
+                <i class="fas fa-book-open"></i>
+                Voir le catalogue
+            </a>
+        </div>
+    }
+
 </div>
