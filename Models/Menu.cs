@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BrasilBurger.Models   
 {
+    [Table("menu")] 
     public class Menu
     {
        [Key]

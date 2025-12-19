@@ -1,22 +1,24 @@
-builer.Services.AddControllersWithViews();
-builder.Services.addSession();
+using Microsoft.EntityFrameworkCore;
+using BrasilBurger.Data;
 
-builder.Service.addDbContexte<YourDbContext>(options =>
+var builder = WebApplication.CreateBuilder(args);
+
+
+builder.Services.AddControllersWithViews();
+builder.Services.AddSession();
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
-
 app.UseDeveloperExceptionPage();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseSession();
 app.UseAuthorization();
-
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
-
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();

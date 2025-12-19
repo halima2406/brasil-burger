@@ -25,7 +25,7 @@ namespace BrasilBurger.Models
         [Column("mot_de_passe")]
         public string MotDePasse { get; set; } = "";
 
-        [Column("type_user1")]
+        [Column("type_user")]
         public string TypeUser { get; set; } = "CLIENT";
     }
 }
