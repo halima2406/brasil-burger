@@ -50,9 +50,9 @@
                     <span>Panier</span>
                     @{
                         var panier = Context.Session.GetPanier();
-                        //<span class="cart-count">@panier.NombreItems</span>
-                        <span class="cart-count">@panier.NombreArticles</span>
+                        
                     }
+                    <span class="cart-count">@panier.NombreArticles</span>
                 </a>
                 @if (Context.Session.GetClientId() != null)
                 {
@@ -71,7 +71,7 @@
         </div>
     </nav>
 
-   
+    
     <main class="main-content">
         @if (TempData["Success"] != null)
         {
