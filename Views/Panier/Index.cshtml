@@ -1,0 +1,118 @@
+@model Panier
+@{
+    ViewData["Title"] = "Mon Panier";
+}
+
+<div class="container">
+
+   
+    <div class="page-header">
+      <h1 class="page-title">Mon Panier <span>(@Model.NombreArticles article@(Model.NombreArticles > 1 ? "s" : ""))</span></h1>
+    </div>
+
+    @if (Model.Articles.Count == 0)
+    {
+       
+        <div class="cart-items">
+            <div class="cart-empty">
+                <i class="fas fa-shopping-cart"></i>
+                <h3>Votre panier est vide</h3>
+                <p>Ajoutez des articles pour commencer votre commande</p>
+                <a href="/Catalogue/Index" class="cart-empty-btn">
+                    <i class="fas fa-utensils"></i>
+                    Voir le catalogue
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+
+        <div class="cart-layout">
+
+            
+            <div class="cart-items">
+                @foreach (var item in Model.Articles)
+                {
+                    <div class="cart-item">
+                        <div class="cart-item-image">
+                            @if (!string.IsNullOrEmpty(item.Image))
+                            {
+                                <img src="@item.Image" alt="@item.Nom">
+                            }
+                            else if (item.Type == "BURGER")
+                            {
+                                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200" alt="@item.Nom">
+                            }
+                            else if (item.Type == "MENU")
+                            {
+                                <img src="https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=200" alt="@item.Nom">
+                            }
+                            else if (item.Type == "FRITES")
+                            {
+                                <img src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=200" alt="@item.Nom">
+                            }
+                            else
+                            {
+                                <img src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=200" alt="@item.Nom">
+                            }
+                        </div>
+                        <div class="cart-item-info">
+                            <h3 class="cart-item-name">@item.Nom</h3>
+                            <p class="cart-item-desc">@item.Type</p>
+                        </div>
+                        <div class="cart-item-quantity">
+                            <form asp-action="ModifierQuantite" method="post" style="display: contents;">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <input type="hidden" name="type" value="@item.Type" />
+                                <button type="submit" name="quantite" value="@(item.Quantite - 1)" class="qty-btn">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <span class="qty-value">@item.Quantite</span>
+                                <button type="submit" name="quantite" value="@(item.Quantite + 1)" class="qty-btn">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <div class="cart-item-price">@item.Total.ToString("N0") FCFA</div>
+                        <form asp-action="Supprimer" method="post">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <input type="hidden" name="type" value="@item.Type" />
+                            <button type="submit" class="cart-item-delete">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+
+          
+            <div class="cart-summary">
+                <h2 class="summary-title">Récapitulatif</h2>
+                
+                <div class="summary-row">
+                    <span class="summary-label">Sous-total</span>
+                    <span class="summary-value">@Model.Total.ToString("N0") FCFA</span>
+                </div>
+
+                <div class="summary-divider"></div>
+
+                <div class="summary-total">
+                    <span class="summary-total-label">Total</span>
+                    <span class="summary-total-value">@Model.Total.ToString("N0") FCFA</span>
+                </div>
+
+                <a asp-controller="Commande" asp-action="ChoisirModeLivraison" class="summary-btn">
+                    Commander maintenant
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+
+                <p class="summary-note">
+                    <i class="fas fa-lock"></i> Paiement sécurisé
+                </p>
+            </div>
+
+        </div>
+    }
+
+</div>
