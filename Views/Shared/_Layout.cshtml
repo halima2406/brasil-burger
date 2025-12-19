@@ -1,50 +1,100 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - BrasilBurger</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/BrasilBurger.styles.css" asp-append-version="true" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - Brasil Burger</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="~/css/site.css" rel="stylesheet" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">BrasilBurger</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
+
+   
+    <nav class="navbar">
+        <div class="navbar-container">
+            
+            <a href="/" class="navbar-logo">
+                <div class="navbar-logo-icon">
+                    <i class="fas fa-hamburger"></i>
+                </div>
+                <span class="navbar-logo-text">Brasil Burger</span>
+            </a>
+
+            <div class="navbar-menu">
+                @{
+                    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+                    var action = ViewContext.RouteData.Values["action"]?.ToString();
+                }
+                <a asp-controller="Catalogue" asp-action="Index" class="navbar-item @(controller == "Catalogue" && action == "Index" ? "active" : "")">
+                    <i class="fas fa-book-open"></i>
+                    Catalogue
+                </a>
+                <a asp-controller="Catalogue" asp-action="Menus" class="navbar-item @(action == "Menus" ? "active" : "")">
+                    <i class="fas fa-layer-group"></i>
+                    Menus
+                </a>
+                <a asp-controller="Panier" asp-action="Index" class="navbar-item @(controller == "Panier" ? "active" : "")">
+                    <i class="fas fa-bag-shopping"></i>
+                    Commander
+                </a>
+                <a asp-controller="Commande" asp-action="MesCommandes" class="navbar-item @(controller == "Commande" ? "active" : "")">
+                    <i class="fas fa-clock-rotate-left"></i>
+                    Mes Commandes
+                </a>
+            </div>
+
+            <div class="navbar-actions">
+                <a asp-controller="Panier" asp-action="Index" class="navbar-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Panier</span>
+                    @{
+                        var panier = Context.Session.GetPanier();
+                        //<span class="cart-count">@panier.NombreItems</span>
+                        <span class="cart-count">@panier.NombreArticles</span>
+                    }
+                </a>
+                @if (Context.Session.GetClientId() != null)
+                {
+                    <a asp-controller="Auth" asp-action="Deconnexion" class="navbar-user" title="@Context.Session.GetString("ClientNom") - Déconnexion">
+                        <i class="fas fa-user"></i>
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="Auth" asp-action="Connexion" class="navbar-user" title="Se connecter">
+                        <i class="fas fa-user"></i>
+                    </a>
+                }
+            </div>
+
+        </div>
+    </nav>
+
+   
+    <main class="main-content">
+        @if (TempData["Success"] != null)
+        {
+            <div class="container">
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    @TempData["Success"]
                 </div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="container">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i>
+                    @TempData["Error"]
+                </div>
+            </div>
+        }
+        @RenderBody()
+    </main>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - BrasilBurger - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
