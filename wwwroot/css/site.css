@@ -1185,4 +1185,73 @@ body {
   .payment-methods {
       grid-template-columns: 1fr;
   }
+
+  /* ===== ZONES LIVRAISON ===== */
+.zones-section {
+  display: none;
+  margin: 30px 0;
+}
+
+.zones-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.zones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+}
+
+.zone-btn {
+  background: var(--white);
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: inherit;
+}
+
+.zone-btn:hover {
+  border-color: var(--primary);
+}
+
+.zone-btn.selected {
+  border-color: var(--primary);
+  background: rgba(46,125,50,0.1);
+}
+
+.zone-name {
+  font-weight: 600;
+  color: var(--dark);
+  margin-bottom: 5px;
+}
+
+.zone-price {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.summary-centered {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.help-message {
+  text-align: center;
+  margin-top: 15px;
+  color: var(--gray);
+  font-size: 14px;
+}
+
+#btnSubmit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 }
