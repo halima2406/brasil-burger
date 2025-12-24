@@ -12,6 +12,17 @@ COPY . .
 
 RUN composer install --no-dev --no-scripts --optimize-autoloader
 
+RUN a2enmod rewrite
+
+RUN echo '<VirtualHost *:80>\n\
+    DocumentRoot /var/www/html/public\n\
+    <Directory /var/www/html/public>\n\
+        AllowOverride All\n\
+        Require all granted\n\
+        DirectoryIndex index.php\n\
+    </Directory>\n\
+</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
+
 RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
