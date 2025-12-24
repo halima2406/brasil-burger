@@ -1,16 +1,9 @@
-cat > render.yaml << 'EOF'
 services:
   - type: web
     name: brasil-burger-symfony
-    env: php
-    runtime: php
+    env: docker
     plan: free
-    buildCommand: |
-      php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" &&
-      php composer-setup.php &&
-      php composer.phar install --no-dev --optimize-autoloader &&
-      rm composer-setup.php
-    startCommand: php -S 0.0.0.0:$PORT -t public
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: APP_ENV
         value: prod
@@ -18,4 +11,3 @@ services:
         generateValue: true
       - key: DATABASE_URL
         value: postgresql://default:npg_7DL6FeUdkJYl@ep-bold-smoke-a2lga75q-pooler.eu-central-1.aws.neon.tech:5432/vercel_db?sslmode=require
-EOF
