@@ -5,12 +5,19 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     libpq-dev \
+    curl \
     && docker-php-ext-install pdo pdo_pgsql
 
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 WORKDIR /app
+
+
+COPY composer.json composer.lock ./
+
+
+RUN composer install --optimize-autoloader
 
 
 COPY . .
@@ -20,6 +27,5 @@ RUN composer install --no-dev --optimize-autoloader
 
 
 EXPOSE 8080
-
 
 CMD ["php", "-S", "0.0.0.0:8080", "-t", "public"]
