@@ -1,21 +1,19 @@
-FROM php:8.2-cli
+FROM composer:2.6 AS composer
+FROM php:8.2-apache
 
-RUN apt-get update && apt-get install -y \
-    git \
-    unzip \
-    libpq-dev \
-    curl \
-    && docker-php-ext-install pdo pdo_pgsql \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libpq-dev git unzip \
+    && docker-php-ext-install pdo pdo_pgsql
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+COPY --from=composer /usr/bin/composer /usr/bin/composer
 
-WORKDIR /app
+WORKDIR /var/www/html
 
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --no-scripts --optimize-autoloader
 
-EXPOSE 8080
+RUN chown -R www-data:www-data /var/www/html
 
-CMD ["php", "-S", "0.0.0.0:8080", "-t", "public"]
+EXPOSE 80
+
+CMD ["apache2-foreground"]
