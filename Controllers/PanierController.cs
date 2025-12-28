@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using BrasilBurger.Data;
 using BrasilBurger.Models;
 using BrasilBurger.Helpers;
+using Microsoft.EntityFrameworkCore;  // ← AJOUTÉ
 
 namespace BrasilBurger.Controllers
 {
@@ -28,7 +29,13 @@ namespace BrasilBurger.Controllers
 
             if (type == "MENU")
             {
-                var menu = _context.Menus.Find(id);
+               
+                var menu = _context.Menus
+                    .Include(m => m.Burger)
+                    .Include(m => m.Boisson)
+                    .Include(m => m.Frite)
+                    .FirstOrDefault(m => m.Id == id);
+                    
                 if (menu != null)
                 {
                     panier.AjouterArticle(menu.Id, menu.Nom, menu.Prix, menu.Image, "MENU");
@@ -72,7 +79,12 @@ namespace BrasilBurger.Controllers
         
         public IActionResult AjouterMenu(int id)
         {
-            var menu = _context.Menus.Find(id);
+            
+            var menu = _context.Menus
+                .Include(m => m.Burger)
+                .Include(m => m.Boisson)
+                .Include(m => m.Frite)
+                .FirstOrDefault(m => m.Id == id);
             
             if (menu != null)
             {

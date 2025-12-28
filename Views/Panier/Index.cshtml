@@ -62,14 +62,16 @@
                             <p class="cart-item-desc">@item.Type</p>
                         </div>
                         <div class="cart-item-quantity">
-                            <form asp-action="ModifierQuantite" method="post" style="display: contents;">
+                            <form asp-action="Diminuer" method="post" style="display: inline;">
                                 <input type="hidden" name="id" value="@item.Id" />
-                                <input type="hidden" name="type" value="@item.Type" />
-                                <button type="submit" name="quantite" value="@(item.Quantite - 1)" class="qty-btn">
+                                <button type="submit" class="qty-btn">
                                     <i class="fas fa-minus"></i>
                                 </button>
-                                <span class="qty-value">@item.Quantite</span>
-                                <button type="submit" name="quantite" value="@(item.Quantite + 1)" class="qty-btn">
+                            </form>
+                            <span class="qty-value">@item.Quantite</span>
+                            <form asp-action="Augmenter" method="post" style="display: inline;">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <button type="submit" class="qty-btn">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </form>
