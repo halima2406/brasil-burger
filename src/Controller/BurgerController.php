@@ -81,4 +81,31 @@ class BurgerController extends AbstractController
             'message' => 'Burger modifié avec succès'
         ]);
     }
+
+    #[Route('/delete/{id}', name: 'app_burger_delete', methods: ['POST'])]
+    public function delete(int $id, Connection $connection): Response
+    {
+        $burger = $connection->fetchAssociative("
+            SELECT id, nom FROM produit WHERE id = ? AND type_produit = 'BURGER'
+        ", [$id]);
+
+        if (!$burger) {
+            return $this->json(['error' => 'Burger non trouvé'], 404);
+        }
+
+        $commandesLiees = $connection->fetchOne("
+            SELECT COUNT(*) FROM ligne_commande WHERE produit_id = ?
+        ", [$id]);
+
+        if ($commandesLiees > 0) {
+            return $this->json(['error' => 'Impossible de supprimer : burger lié à des commandes'], 400);
+        }
+
+        $connection->executeStatement("DELETE FROM produit WHERE id = ?", [$id]);
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Burger supprimé avec succès'
+        ]);
+    }
 }
