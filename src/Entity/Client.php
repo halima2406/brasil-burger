@@ -8,7 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: ClientRepository::class)]
+//#[ORM\Entity(repositoryClass: ClientRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 class Client
 {
@@ -65,7 +65,7 @@ class Client
         }
     }
 
-    // --- getters/setters ---
+    
     public function getNumero(): string { return $this->numero; }
     public function setNumero(string $numero): static { $this->numero = $numero; return $this; }
 
@@ -96,9 +96,6 @@ class Client
     public function isActive(): bool { return $this->isActive; }
     public function setIsActive(bool $isActive): static { $this->isActive = $isActive; return $this; }
 
-    /**
-     * @return Collection<int, Commande>
-     */
     public function getCommandes(): Collection { return $this->commandes; }
 
     public function addCommande(Commande $commande): static
