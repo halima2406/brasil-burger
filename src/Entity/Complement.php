@@ -27,7 +27,7 @@ class Complement
     private ?string $prix = null;
 
     #[ORM\Column(length: 50)]
-    private ?string $type = null; // frites, boisson, sauce, dessert
+    private ?string $type = null; 
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
@@ -148,9 +148,7 @@ class Complement
         return $this;
     }
 
-    /**
-     * @return Collection<int, Menu>
-     */
+   
     public function getMenus(): Collection
     {
         return $this->menus;
