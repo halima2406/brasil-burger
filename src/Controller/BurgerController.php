@@ -53,4 +53,32 @@ class BurgerController extends AbstractController
             'burger' => $burger
         ]);
     }
+
+    #[Route('/edit/{id}', name: 'app_burger_edit', methods: ['POST'])]
+    public function edit(int $id, Request $request, Connection $connection): Response
+    {
+        $nom = $request->request->get('nom');
+        $prix = $request->request->get('prix');
+
+        if (empty($nom) || !is_numeric($prix) || $prix < 0) {
+            return $this->json(['error' => 'Données invalides'], 400);
+        }
+
+        $burger = $connection->fetchAssociative("
+            SELECT id FROM produit WHERE id = ? AND type_produit = 'BURGER'
+        ", [$id]);
+
+        if (!$burger) {
+            return $this->json(['error' => 'Burger non trouvé'], 404);
+        }
+
+        $connection->executeStatement("
+            UPDATE produit SET nom = ?, prix = ? WHERE id = ?
+        ", [$nom, $prix, $id]);
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Burger modifié avec succès'
+        ]);
+    }
 }
