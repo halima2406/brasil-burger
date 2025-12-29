@@ -9,21 +9,25 @@ class BurgerSearchFormDto
     public ?float $prixMin = null;
     public ?float $prixMax = null;
 
-    /** Helper: renvoie null (pas de filtre), true = archivé, false = actif */
-    public function archivedRequested(): ?bool
+    public function isArchived(): ?bool
     {
-        if ($this->statut === null || $this->statut === '') {
+        if (empty($this->statut)) {
             return null;
         }
         return $this->statut === 'archive';
     }
 
-    /** Helper: renvoie null (pas de filtre), true = disponible, false = indisponible */
-    public function disponibleRequested(): ?bool
+    public function isDisponible(): ?bool
     {
-        if ($this->statut === null || $this->statut === '') {
+        if (empty($this->statut)) {
             return null;
         }
         return $this->statut === 'disponible';
+    }
+
+    public function hasFilters(): bool
+    {
+        return !empty($this->nom) || !empty($this->statut) || 
+               $this->prixMin !== null || $this->prixMax !== null;
     }
 }
