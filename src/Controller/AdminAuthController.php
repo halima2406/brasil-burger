@@ -46,4 +46,11 @@ class AdminAuthController extends AbstractController
 
         return $this->render('admin/login.html.twig', ['error' => $error]);
     }
+
+    #[Route('/admin/logout', name: 'app_admin_logout')]
+    public function logout(SessionInterface $session): Response
+    {
+        $session->invalidate();
+        return $this->redirectToRoute('app_admin_login');
+    }
 }
