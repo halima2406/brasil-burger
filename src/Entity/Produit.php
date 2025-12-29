@@ -43,10 +43,7 @@ class Produit
     #[ORM\Column(name: "est_archive", type: "boolean")]
     private bool $estArchive = false;
 
-    // ========================================
-    // GETTERS ET SETTERS
-    // ========================================
-
+  
     public function getId(): ?int
     {
         return $this->id;
@@ -74,9 +71,6 @@ class Produit
         return $this;
     }
 
-    /**
-     * Prix formaté pour l'affichage
-     */
     public function getPrixFormate(): string
     {
         return number_format($this->prix, 0, ',', ' ') . ' FCFA';
@@ -126,37 +120,25 @@ class Produit
         return $this;
     }
 
-    // ========================================
-    // MÉTHODES UTILES
-    // ========================================
-
-    /**
-     * Vérifie si c'est un burger
-     */
+    
     public function isBurger(): bool
     {
         return $this->typeProduit === 'BURGER';
     }
 
-    /**
-     * Vérifie si c'est un complément
-     */
+    
     public function isComplement(): bool
     {
         return $this->typeProduit === 'COMPLEMENT';
     }
 
-    /**
-     * Vérifie si c'est une boisson
-     */
+   
     public function isBoisson(): bool
     {
         return $this->isComplement() && $this->typeComplement === 'BOISSON';
     }
 
-    /**
-     * Vérifie si c'est une frite
-     */
+    
     public function isFrite(): bool
     {
         return $this->isComplement() && $this->typeComplement === 'FRITE';
