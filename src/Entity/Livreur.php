@@ -90,9 +90,7 @@ class Livreur
     public function isDisponible(): bool { return $this->disponible; }
     public function setDisponible(bool $disponible): static { $this->disponible = $disponible; return $this; }
 
-    /**
-     * @return Collection<int, Commande>
-     */
+   
     public function getCommandes(): Collection { return $this->commandes; }
 
     public function addCommande(Commande $commande): static
