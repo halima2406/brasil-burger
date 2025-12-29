@@ -3,8 +3,12 @@
 {% block page_title %}Dashboard{% endblock %}
 {% block page_subtitle %}Aperçu général de votre activité{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+{% endblock %}
+
 {% block body %}
-    <!-- Stats Grid avec données réelles -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-icon primary">
@@ -47,16 +51,12 @@
         </div>
     </div>
 
-    <!-- Dashboard Grid -->
     <div class="dashboard-grid">
-        
-        <!-- Recent Orders avec données réelles -->
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">Commandes récentes</h3>
                 <div class="header-actions">
                     <button class="btn btn-sm" onclick="location.reload()">Actualiser</button>
-                    <button class="btn btn-sm" onclick="location.href='{{ path('app_commande_list') }}'">Filtrer</button>
                 </div>
             </div>
             
@@ -98,9 +98,6 @@
                                     <button class="order-action-btn" title="Voir" onclick="voirDetails({{ commande.id }})">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="order-action-btn" title="Modifier">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -110,11 +107,9 @@
             </table>
         </div>
 
-        <!-- Popular Burgers avec données réelles -->
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">Burgers les plus vendus</h3>
-                <a href="{{ path('app_statistiques') }}" class="card-action">Voir tout</a>
             </div>
             
             <div class="popular-items">
@@ -145,159 +140,13 @@
             </div>
         </div>
     </div>
+{% endblock %}
 
-    <style>
-        .header-date {
-            font-size: 14px;
-            color: var(--gray);
-            font-weight: 500;
-        }
-
-        .header-actions .btn-sm {
-            padding: 8px 16px;
-            font-size: 12px;
-            background: var(--light-gray);
-            color: var(--gray);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .header-actions .btn-sm:hover {
-            background: var(--primary);
-            color: var(--white);
-        }
-
-        .popular-items {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .popular-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid var(--light-gray);
-        }
-
-        .popular-item:last-child {
-            border-bottom: none;
-        }
-
-        .sales-info {
-            text-align: right;
-        }
-
-        .sales-number {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--success);
-            margin-bottom: 2px;
-        }
-
-        .sales-revenue {
-            font-size: 12px;
-            color: var(--gray);
-        }
-
-        /* ✅ AJOUT : Styles pour les statuts réels */
-        .order-status.validee {
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .order-status.en-cours {
-            background: #fff3e0;
-            color: #f57c00;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .order-status.prete {
-            background: #f3e5f5;
-            color: #7b1fa2;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .order-status.terminee {
-            background: #e8f5e9;
-            color: #2e7d32;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .order-status.annulee {
-            background: #ffebee;
-            color: #c62828;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        /* Conserver les anciens styles pour compatibilité */
-        .order-status.pending {
-            background: #fff3e0;
-            color: #f57c00;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .order-status.preparing {
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .order-status.delivering {
-            background: #f3e5f5;
-            color: #7b1fa2;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .order-status.completed {
-            background: #e8f5e9;
-            color: #2e7d32;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-    </style>
-
+{% block javascripts %}
+    {{ parent() }}
     <script>
-        // ✅ FONCTION VOIR DÉTAILS (réutilisée des commandes)
-        async function voirDetails(commandeId) {
-            alert('Redirection vers les détails de la commande ' + commandeId);
-            window.location.href = '/admin/commande/list';
+        function voirDetails(commandeId) {
+            alert('Détails commande ' + commandeId);
         }
-
-        // Auto-refresh toutes les 2 minutes
-        setInterval(() => {
-            console.log('Mise à jour automatique...');
-            // location.reload(); // Décommentez pour activer le refresh auto
-        }, 120000);
     </script>
 {% endblock %}
