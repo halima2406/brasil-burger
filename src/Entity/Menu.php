@@ -33,7 +33,7 @@ class Menu
     #[ORM\Column(name: "est_archive", type: "boolean")]
     private bool $estArchive = false;
 
-    // Relations ManyToOne vers Produit (comme votre C#)
+    
     #[ORM\ManyToOne(targetEntity: Produit::class)]
     #[ORM\JoinColumn(name: "burger_id", referencedColumnName: "id", nullable: false)]
     private ?Produit $burger = null;
@@ -46,13 +46,7 @@ class Menu
     #[ORM\JoinColumn(name: "frite_id", referencedColumnName: "id", nullable: false)]
     private ?Produit $frite = null;
 
-    // ========================================
-    // PRIX CALCULÉ (EXACTEMENT COMME EN C#)
-    // ========================================
-    
-    /**
-     * Reproduit exactement la logique C# : Burger.Prix + Boisson.Prix + Frite.Prix
-     */
+  
     public function getPrix(): float
     {
         $total = 0.0;
@@ -72,36 +66,27 @@ class Menu
         return $total;
     }
 
-    /**
-     * ✅ ALIAS pour compatibilité avec MenuPrixService
-     * Appelle simplement getPrix() pour éviter les incohérences
-     */
+   
     public function getPrixCalcule(): float
     {
         return $this->getPrix();
     }
 
-    /**
-     * Prix formaté pour l'affichage (comme "3 300 FCFA")
-     */
+   
     public function getPrixFormate(): string
     {
         $prix = $this->getPrix();
         return number_format($prix, 0, ',', ' ') . ' FCFA';
     }
 
-    /**
-     * Prix avec réduction (5% comme dans le service)
-     */
+   
     public function getPrixAvecReduction(): float
     {
         $prixBase = $this->getPrix();
-        return $prixBase * 0.95; // 5% de réduction
+        return $prixBase * 0.95; 
     }
 
-    // ========================================
-    // GETTERS ET SETTERS STANDARD
-    // ========================================
+  
 
     public function getId(): ?int
     {
@@ -174,7 +159,7 @@ class Menu
         return $this;
     }
 
-    // Relations
+   
     public function getBurger(): ?Produit
     {
         return $this->burger;
@@ -208,13 +193,7 @@ class Menu
         return $this;
     }
 
-    // ========================================
-    // MÉTHODES DE DEBUG ET UTILITAIRES
-    // ========================================
-
-    /**
-     * Retourne le détail du calcul pour debug
-     */
+    
     public function getDetailCalcul(): array
     {
         return [
