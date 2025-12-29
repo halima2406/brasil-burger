@@ -8,11 +8,11 @@ class GenerateNumeroServiceImpl implements GenerateNumeroService
 {
     public function generateNumeroCommande(): string
     {
-        return 'CMD' . date('Ymd') . strtoupper(bin2hex(random_bytes(3)));
+        return 'CMD' . date('Ymd') . rand(1000, 9999);
     }
 
     public function generateNumeroClient(): string
     {
-        return 'CLI' . strtoupper(bin2hex(random_bytes(4)));
+        return 'CLI' . rand(10000, 99999);
     }
 }
