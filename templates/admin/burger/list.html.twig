@@ -3,43 +3,26 @@
 {% block page_title %}Gestion des Burgers{% endblock %}
 {% block page_subtitle %}Gérez votre catalogue de burgers{% endblock %}
 
-{% block header_actions %}
-    <button class="btn btn-primary" onclick="window.location='{{ path('app_burger_add') }}'">
-        <i class="fas fa-plus"></i>
-        Ajouter un burger
-    </button>
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/burger.css') }}">
 {% endblock %}
 
 {% block body %}
-    <!-- Filters Bar -->
     <div class="filters-bar">
         <div class="search-box">
             <i class="fas fa-search"></i>
             <input type="text" placeholder="Rechercher un burger..." class="form-control">
         </div>
-        <select class="filter-select">
-            <option value="">Tous les statuts</option>
-            <option value="active">Actif</option>
-            <option value="archived">Archivé</option>
-        </select>
-        <select class="filter-select">
-            <option value="">Trier par</option>
-            <option value="name">Nom</option>
-            <option value="price">Prix</option>
-            <option value="sales">Ventes</option>
-        </select>
         <button class="btn btn-primary">Rechercher</button>
-        <button class="btn" style="background: var(--light-gray); color: var(--gray);">Réinitialiser</button>
     </div>
 
-    <!-- Table -->
     <div class="table-card">
         <table class="data-table">
             <thead>
                 <tr>
                     <th>Burger</th>
                     <th>Prix</th>
-                    <th>Ventes</th>
                     <th>Statut</th>
                     <th>Actions</th>
                 </tr>
@@ -47,11 +30,10 @@
             <tbody>
                 {% if burgers is empty %}
                     <tr>
-                        <td colspan="5" style="text-align: center; padding: 40px;">
+                        <td colspan="4" style="text-align: center; padding: 40px;">
                             <div style="color: #666;">
-                                <i class="fas fa-hamburger fa-3x" style="margin-bottom: 15px; opacity: 0.3;"></i>
+                                <i class="fas fa-hamburger fa-3x"></i>
                                 <h4>Aucun burger trouvé</h4>
-                                <p>Les burgers seront affichés ici une fois disponibles</p>
                             </div>
                         </td>
                     </tr>
@@ -65,32 +47,25 @@
                                 </div>
                                 <div class="product-info">
                                     <h4>{{ burger.nom }}</h4>
-                                    <p>{{ burger.description|default('Burger savoureux avec ingrédients frais') }}</p>
+                                    <p>Burger savoureux Brasil Burger</p>
                                 </div>
                             </div>
                         </td>
                         <td><span class="price">{{ burger.prix_formate }} FCFA</span></td>
-                        <td>{{ burger.ventes_jour }} ventes</td>
                         <td>
-                            <span class="status-badge {{ burger.archive ? 'archived' : (burger.disponible ? 'active' : 'inactive') }}">
-                                {{ burger.archive ? 'Archivé' : (burger.disponible ? 'Actif' : 'Inactif') }}
+                            <span class="status-badge {{ burger.disponible ? 'active' : 'inactive' }}">
+                                {{ burger.statut }}
                             </span>
                         </td>
                         <td>
                             <div class="actions-cell">
-                                <button class="action-btn" 
-                                        title="Modifier"
-                                        onclick="editerBurger({{ burger.id }}, '{{ burger.nom|e('js') }}', {{ burger.prix }})">
+                                <button class="action-btn" title="Modifier" onclick="editerBurger({{ burger.id }}, '{{ burger.nom }}', {{ burger.prix }})">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="action-btn" 
-                                        title="Voir détails"
-                                        onclick="voirDetailsBurger({{ burger.id }})">
+                                <button class="action-btn" title="Voir détails" onclick="voirDetails({{ burger.id }})">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button class="action-btn delete" 
-                                        title="Supprimer"
-                                        onclick="supprimerBurger({{ burger.id }}, '{{ burger.nom|e('js') }}')">
+                                <button class="action-btn delete" title="Supprimer" onclick="supprimerBurger({{ burger.id }}, '{{ burger.nom }}')">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -101,669 +76,30 @@
             </tbody>
         </table>
     </div>
+{% endblock %}
 
-    <!-- Pagination -->
-    {% if nbrePage > 1 %}
-    <div class="pagination-container" style="margin-top: 30px; display: flex; justify-content: center; align-items: center;">
-        <nav class="pagination-nav">
-            <div style="display: flex; gap: 5px; align-items: center;">
-                {% if pageEnCours > 1 %}
-                    <a href="?page={{ pageEnCours - 1 }}" class="pagination-btn">
-                        <i class="fas fa-chevron-left"></i>
-                    </a>
-                {% endif %}
-                
-                {% for page in 1..nbrePage %}
-                    <a href="?page={{ page }}" 
-                       class="pagination-btn {{ page == pageEnCours ? 'active' : '' }}">
-                        {{ page }}
-                    </a>
-                {% endfor %}
-                
-                {% if pageEnCours < nbrePage %}
-                    <a href="?page={{ pageEnCours + 1 }}" class="pagination-btn">
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                {% endif %}
-            </div>
-        </nav>
-    </div>
-    {% endif %}
-
-    <!-- ✅ MODAL HTML -->
-    <div id="modalOverlay" class="modal-overlay">
-        <div class="modal-container">
-            <div id="modalContent" class="modal-content">
-                <!-- Le contenu sera injecté ici -->
-            </div>
-        </div>
-    </div>
-
-    <style>
-        /* Styles existants */
-        .pagination-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            background: var(--white);
-            color: var(--gray);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            border: 1px solid var(--light-gray);
-            transition: all 0.3s;
-        }
-
-        .pagination-btn:hover, .pagination-btn.active {
-            background: var(--primary);
-            color: var(--white);
-            border-color: var(--primary);
-        }
-
-        .filters-bar {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 25px;
-            align-items: center;
-        }
-
-        .search-box {
-            position: relative;
-            flex: 1;
-            max-width: 300px;
-        }
-
-        .search-box i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--gray);
-            font-size: 14px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 12px 15px 12px 40px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            font-family: inherit;
-            font-size: 14px;
-            background: var(--white);
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .filter-select {
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            font-family: inherit;
-            font-size: 14px;
-            background: var(--white);
-            cursor: pointer;
-        }
-
-        .filter-select:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: capitalize;
-        }
-
-        .status-badge.active {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .status-badge.inactive {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-
-        .status-badge.archived {
-            background: #ffebee;
-            color: #c62828;
-        }
-
-        /* ✅ NOUVEAUX STYLES MODAL */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal-container {
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-            margin: 20px;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
-            overflow: hidden;
-            animation: modalSlideIn 0.3s ease;
-        }
-
-        @keyframes modalSlideIn {
-            from { 
-                transform: translateY(-30px);
-                opacity: 0;
-            }
-            to { 
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .modal-header {
-            padding: 20px 25px;
-            background: var(--primary);
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header.danger {
-            background: var(--danger);
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.3s;
-        }
-
-        .close-btn:hover {
-            background: rgba(255,255,255,0.2);
-        }
-
-        .modal-body {
-            padding: 25px;
-        }
-
-        /* Burger Stats Grid */
-        .burger-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-
-        .stat-icon {
-            width: 45px;
-            height: 45px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: white;
-        }
-
-        .stat-icon.price { background: linear-gradient(135deg, #2196f3, #1976d2); }
-        .stat-icon.sales { background: linear-gradient(135deg, #4caf50, #2e7d32); }
-        .stat-icon.today { background: linear-gradient(135deg, #ff9800, #f57c00); }
-        .stat-icon.revenue { background: linear-gradient(135deg, #9c27b0, #7b1fa2); }
-
-        .stat-info h4 {
-            margin: 0 0 2px 0;
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--dark);
-        }
-
-        .stat-info p {
-            margin: 0;
-            font-size: 12px;
-            color: var(--gray);
-        }
-
-        /* Recent Orders */
-        .recent-orders h4 {
-            margin: 0 0 15px 0;
-            font-size: 16px;
-            color: var(--dark);
-        }
-
-        .orders-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .order-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .order-item:last-child {
-            border-bottom: none;
-        }
-
-        .order-date {
-            font-size: 12px;
-            color: var(--gray);
-        }
-
-        .order-quantity {
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        .order-total {
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        /* Forms */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
-            box-sizing: border-box;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 25px;
-        }
-
-        .btn-cancel, .btn-save, .btn-delete {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-cancel {
-            background: #f5f5f5;
-            color: var(--gray);
-        }
-
-        .btn-save {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-delete {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn-cancel:hover {
-            background: #e0e0e0;
-        }
-
-        .btn-save:hover {
-            background: var(--primary-dark);
-        }
-
-        .btn-delete:hover {
-            background: #d32f2f;
-        }
-
-        /* Warning Content */
-        .warning-content {
-            text-align: center;
-            padding: 20px 0;
-        }
-
-        .warning-content i {
-            color: var(--danger);
-            margin-bottom: 15px;
-        }
-
-        .warning-content h4 {
-            margin: 0 0 10px 0;
-            color: var(--dark);
-        }
-
-        .warning-content p {
-            margin: 5px 0;
-            color: var(--gray);
-        }
-
-        .warning-text {
-            color: var(--danger) !important;
-            font-weight: 600;
-        }
-
-        /* No Orders */
-        .no-orders {
-            text-align: center;
-            padding: 40px 0;
-            color: var(--gray);
-        }
-
-        .no-orders i {
-            margin-bottom: 10px;
-            opacity: 0.3;
-        }
-
-        /* Notifications */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            z-index: 1001;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .notification.success {
-            background: #4caf50;
-        }
-
-        .notification.error {
-            background: #f44336;
-        }
-
-        .notification.info {
-            background: #2196f3;
-        }
-    </style>
-
+{% block javascripts %}
+    {{ parent() }}
     <script>
-        // ✅ FONCTION VOIR DÉTAILS AVEC MODAL ÉLÉGANT
-        async function voirDetailsBurger(burgerId) {
-            try {
-                const response = await fetch(`/admin/burger/details/${burgerId}`);
-                const data = await response.json();
-                
-                if (data.error) {
-                    showNotification('❌ ' + data.error, 'error');
-                    return;
-                }
-                
-                // Construire le contenu du modal
-                const modalContent = `
-                    <div class="modal-header">
-                        <h3><i class="fas fa-hamburger"></i> ${data.burger.nom}</h3>
-                        <button onclick="fermerModal()" class="close-btn">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="burger-stats">
-                            <div class="stat-item">
-                                <div class="stat-icon price"><i class="fas fa-tag"></i></div>
-                                <div class="stat-info">
-                                    <h4>${data.burger.prix_formate} FCFA</h4>
-                                    <p>Prix unitaire</p>
-                                </div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-icon sales"><i class="fas fa-chart-line"></i></div>
-                                <div class="stat-info">
-                                    <h4>${data.burger.ventes_totales}</h4>
-                                    <p>Ventes totales</p>
-                                </div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-icon today"><i class="fas fa-calendar-day"></i></div>
-                                <div class="stat-info">
-                                    <h4>${data.burger.ventes_jour}</h4>
-                                    <p>Ventes aujourd'hui</p>
-                                </div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-icon revenue"><i class="fas fa-coins"></i></div>
-                                <div class="stat-info">
-                                    <h4>${data.burger.chiffre_affaires_formate} FCFA</h4>
-                                    <p>Chiffre d'affaires</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        ${data.commandes.length > 0 ? `
-                        <div class="recent-orders">
-                            <h4><i class="fas fa-history"></i> Commandes récentes</h4>
-                            <div class="orders-list">
-                                ${data.commandes.slice(0, 5).map(cmd => `
-                                    <div class="order-item">
-                                        <div class="order-date">${cmd.date_formate}</div>
-                                        <div class="order-quantity">${cmd.quantite}x</div>
-                                        <div class="order-total">${cmd.total_formate} FCFA</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ` : `
-                        <div class="no-orders">
-                            <i class="fas fa-inbox fa-2x"></i>
-                            <p>Aucune commande encore</p>
-                        </div>
-                        `}
-                    </div>
-                `;
-                
-                document.getElementById('modalContent').innerHTML = modalContent;
-                document.getElementById('modalOverlay').classList.add('active');
-                
-            } catch (error) {
-                console.error('Erreur:', error);
-                showNotification('❌ Erreur lors du chargement', 'error');
+        function voirDetails(id) {
+            alert('Détails burger ' + id);
+        }
+
+        function editerBurger(id, nom, prix) {
+            const nouveauNom = prompt('Nouveau nom:', nom);
+            const nouveauPrix = prompt('Nouveau prix:', prix);
+            
+            if (nouveauNom && nouveauPrix) {
+                // Logique d'édition à implémenter
+                alert('Modification burger ' + id);
             }
         }
 
-        // ✅ FONCTION ÉDITER AVEC MODAL
-        async function editerBurger(burgerId, nomActuel, prixActuel) {
-            const modalContent = `
-                <div class="modal-header">
-                    <h3><i class="fas fa-edit"></i> Modifier le burger</h3>
-                    <button onclick="fermerModal()" class="close-btn">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <form onsubmit="sauvegarderBurger(event, ${burgerId})">
-                        <div class="form-group">
-                            <label>Nom du burger</label>
-                            <input type="text" id="burgerNom" value="${nomActuel}" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Prix (FCFA)</label>
-                            <input type="number" id="burgerPrix" value="${prixActuel}" min="0" required>
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" onclick="fermerModal()" class="btn-cancel">Annuler</button>
-                            <button type="submit" class="btn-save">Sauvegarder</button>
-                        </div>
-                    </form>
-                </div>
-            `;
-            
-            document.getElementById('modalContent').innerHTML = modalContent;
-            document.getElementById('modalOverlay').classList.add('active');
-        }
-
-        // ✅ SAUVEGARDER LES MODIFICATIONS
-        async function sauvegarderBurger(event, burgerId) {
-            event.preventDefault();
-            
-            const nom = document.getElementById('burgerNom').value;
-            const prix = document.getElementById('burgerPrix').value;
-            
-            try {
-                const formData = new FormData();
-                formData.append('nom', nom);
-                formData.append('prix', prix);
-                
-                const response = await fetch(`/admin/burger/edit/${burgerId}`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showNotification('✅ ' + data.message, 'success');
-                    fermerModal();
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showNotification('❌ ' + data.error, 'error');
-                }
-                
-            } catch (error) {
-                showNotification('❌ Erreur lors de la modification', 'error');
+        function supprimerBurger(id, nom) {
+            if (confirm('Supprimer ' + nom + ' ?')) {
+                // Logique de suppression à implémenter
+                alert('Suppression burger ' + id);
             }
         }
-
-        // ✅ SUPPRIMER AVEC CONFIRMATION ÉLÉGANTE
-        async function supprimerBurger(burgerId, nomBurger) {
-            const modalContent = `
-                <div class="modal-header danger">
-                    <h3><i class="fas fa-exclamation-triangle"></i> Supprimer le burger</h3>
-                    <button onclick="fermerModal()" class="close-btn">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="warning-content">
-                        <i class="fas fa-trash-alt fa-3x"></i>
-                        <h4>Êtes-vous sûr ?</h4>
-                        <p>Vous êtes sur le point de supprimer <strong>"${nomBurger}"</strong>.</p>
-                        <p class="warning-text">Cette action est irréversible !</p>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" onclick="fermerModal()" class="btn-cancel">Annuler</button>
-                        <button type="button" onclick="confirmerSuppression(${burgerId})" class="btn-delete">Supprimer</button>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('modalContent').innerHTML = modalContent;
-            document.getElementById('modalOverlay').classList.add('active');
-        }
-
-        // ✅ CONFIRMER LA SUPPRESSION
-        async function confirmerSuppression(burgerId) {
-            try {
-                const response = await fetch(`/admin/burger/delete/${burgerId}`, {
-                    method: 'POST'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showNotification('✅ ' + data.message, 'success');
-                    fermerModal();
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showNotification('❌ ' + data.error, 'error');
-                }
-                
-            } catch (error) {
-                showNotification('❌ Erreur lors de la suppression', 'error');
-            }
-        }
-
-        // ✅ FERMER MODAL
-        function fermerModal() {
-            document.getElementById('modalOverlay').classList.remove('active');
-        }
-
-        // ✅ NOTIFICATIONS TOAST
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => notification.classList.add('show'), 100);
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
-
-        // Fermer modal en cliquant sur l'overlay
-        document.addEventListener('click', function(e) {
-            if (e.target.id === 'modalOverlay') {
-                fermerModal();
-            }
-        });
     </script>
 {% endblock %}
