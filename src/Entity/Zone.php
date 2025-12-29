@@ -9,7 +9,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: ZoneRepository::class)]
+//#[ORM\Entity(repositoryClass: ZoneRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 class Zone
 {
@@ -83,9 +83,7 @@ class Zone
     public function isActive(): bool { return $this->isActive; }
     public function setIsActive(bool $isActive): self { $this->isActive = $isActive; return $this; }
 
-    /**
-     * @return Collection<int, Commande>
-     */
+    
     public function getCommandes(): Collection { return $this->commandes; }
 
     public function addCommande(Commande $commande): self
@@ -112,7 +110,7 @@ class Zone
         return $this->nom ?? '';
     }
 
-    // Pour la compatibilité avec l'ancien code
+   
     public function getQuartier(): ?string { return $this->getNom(); }
     public function setQuartier(string $quartier): self { return $this->setNom($quartier); }
     public function getPrix(): ?string { return $this->getPrixLivraison(); }
