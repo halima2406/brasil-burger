@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
+
 #[ORM\Entity(repositoryClass: GestionnaireRepository::class)]
 class Gestionnaire extends User
 {
@@ -15,6 +16,7 @@ class Gestionnaire extends User
 
     #[ORM\Column]
     private bool $isActive = true;
+    
 
     #[ORM\OneToMany(mappedBy: 'gestionnaire', targetEntity: Commande::class)]
     private Collection $commandes;
@@ -49,9 +51,7 @@ class Gestionnaire extends User
         return $this;
     }
 
-    /**
-     * @return Collection<int, Commande>
-     */
+    
     public function getCommandes(): Collection
     {
         return $this->commandes;
