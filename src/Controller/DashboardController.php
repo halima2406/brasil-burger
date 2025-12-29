@@ -20,8 +20,14 @@ class DashboardController extends AbstractController
         $aujourdhui = date('Y-m-d');
         $metriques = $this->getMetriques($connection, $aujourdhui);
         $commandes = $this->getCommandes($connection, $aujourdhui);
+        $topBurgers = $this->getTopBurgers($connection, $aujourdhui);
 
-        return new Response('<h1>Dashboard Brasil Burger</h1><p>Commandes du jour: ' . $metriques['commandes_jour'] . '</p><p>Recettes: ' . $metriques['recettes_jour_formate'] . ' FCFA</p><p>Dernières commandes: ' . count($commandes) . '</p><a href="/admin/logout">Se déconnecter</a>');
+        return $this->render('admin/dashboard.html.twig', [
+            'metriques' => $metriques,
+            'commandesRecentes' => $commandes,
+            'topBurgers' => $topBurgers,
+            'dateAujourdhui' => $aujourdhui
+        ]);
     }
 
     private function getMetriques(Connection $connection, string $date): array
@@ -55,6 +61,11 @@ class DashboardController extends AbstractController
         }
 
         return $commandes;
+    }
+
+    private function getTopBurgers(Connection $connection, string $date): array
+    {
+        return [];
     }
 
     private function getStatusBadge(?string $statut): array
