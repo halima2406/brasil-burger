@@ -58,7 +58,7 @@ class Commande
     public function getStatut(): ?string { return $this->statut; }
     public function setStatut(?string $statut): self { $this->statut = $statut; return $this; }
 
-    // Relations pour templates
+   
     public function getClient(): ?Client { return $this->client; }
     public function setClient(?Client $client): self { $this->client = $client; return $this; }
     
@@ -68,7 +68,7 @@ class Commande
     public function getZone(): ?Zone { return $this->zone; }
     public function setZone(?Zone $zone): self { $this->zone = $zone; return $this; }
 
-    // Méthodes pour compatibilité templates
+  
     public function getEtat(): ?string { return $this->statut; }
     public function setEtat(?string $etat): self { $this->statut = $etat; return $this; }
     
