@@ -31,4 +31,26 @@ class BurgerController extends AbstractController
             'burgers' => $burgers
         ]);
     }
+
+    #[Route('/details/{id}', name: 'app_burger_details')]
+    public function details(int $id, Connection $connection): Response
+    {
+        $burger = $connection->fetchAssociative("
+            SELECT p.id, p.nom, p.prix, p.type_produit
+            FROM produit p 
+            WHERE p.id = ? AND p.type_produit = 'BURGER'
+        ", [$id]);
+
+        if (!$burger) {
+            return $this->json(['error' => 'Burger non trouvé'], 404);
+        }
+
+        $burger['prix_formate'] = number_format($burger['prix'], 0, ',', ' ');
+        $burger['disponible'] = $burger['prix'] > 0;
+
+        return $this->json([
+            'success' => true,
+            'burger' => $burger
+        ]);
+    }
 }
