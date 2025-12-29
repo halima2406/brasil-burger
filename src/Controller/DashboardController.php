@@ -19,8 +19,9 @@ class DashboardController extends AbstractController
 
         $aujourdhui = date('Y-m-d');
         $metriques = $this->getMetriques($connection, $aujourdhui);
+        $commandes = $this->getCommandes($connection, $aujourdhui);
 
-        return new Response('<h1>Dashboard Brasil Burger</h1><p>Commandes du jour: ' . $metriques['commandes_jour'] . '</p><p>Recettes: ' . $metriques['recettes_jour_formate'] . ' FCFA</p><a href="/admin/logout">Se déconnecter</a>');
+        return new Response('<h1>Dashboard Brasil Burger</h1><p>Commandes du jour: ' . $metriques['commandes_jour'] . '</p><p>Recettes: ' . $metriques['recettes_jour_formate'] . ' FCFA</p><p>Dernières commandes: ' . count($commandes) . '</p><a href="/admin/logout">Se déconnecter</a>');
     }
 
     private function getMetriques(Connection $connection, string $date): array
@@ -35,5 +36,23 @@ class DashboardController extends AbstractController
             'commandes_en_cours' => 0,
             'commandes_annulees' => 0
         ];
+    }
+
+    private function getCommandes(Connection $connection, string $date): array
+    {
+        $commandes = $connection->fetchAllAssociative("
+            SELECT c.id, c.client_id, c.montant_total, c.statut, c.date_commande
+            FROM commande c WHERE DATE(c.date_commande) = ? ORDER BY c.date_commande DESC LIMIT 5
+        ", [$date]);
+
+        foreach ($commandes as &$commande) {
+            $commande['client_nom'] = 'Client ' . $commande['client_id'];
+            $commande['client_initiales'] = 'C' . $commande['client_id'];
+            $commande['prix_formate'] = number_format($commande['montant_total'], 0, ',', ' ');
+            $commande['heure'] = date('H:i', strtotime($commande['date_commande']));
+            $commande['produit_exemple'] = 'Produit test';
+        }
+
+        return $commandes;
     }
 }
