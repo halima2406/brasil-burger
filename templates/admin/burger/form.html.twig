@@ -1,0 +1,210 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}{{ title }} - Brasil Burger{% endblock %}
+
+{% block body %}
+    <div class="page-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-hamburger me-2"></i>{{ title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ path('app_burger_list') }}" class="text-decoration-none">Burgers</a>
+                    </li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ path('app_burger_list') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="table-container">
+                <div class="mb-4">
+                    <h5 class="mb-0">{{ title }}</h5>
+                    <small class="text-muted">Remplissez tous les champs obligatoires</small>
+                </div>
+
+                {{ form_start(formBurger, {'attr': {'enctype': 'multipart/form-data', 'novalidate': 'novalidate'}}) }}
+                
+                <div class="row">
+                    <!-- Informations principales -->
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            {{ form_label(formBurger.nom, null, {'label_attr': {'class': 'form-label'}}) }}
+                            {{ form_widget(formBurger.nom, {'attr': {'class': 'form-control'}}) }}
+                            <div class="form-text text-muted">Le nom du burger tel qu'il apparaîtra dans le menu</div>
+                            {{ form_errors(formBurger.nom) }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form_label(formBurger.prix, null, {'label_attr': {'class': 'form-label'}}) }}
+                            <div class="input-group">
+                                {{ form_widget(formBurger.prix, {'attr': {'class': 'form-control'}}) }}
+                                <span class="input-group-text">FCFA</span>
+                            </div>
+                            <div class="form-text text-muted">Prix de vente en francs CFA</div>
+                            {{ form_errors(formBurger.prix) }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form_label(formBurger.description, null, {'label_attr': {'class': 'form-label'}}) }}
+                            {{ form_widget(formBurger.description, {'attr': {'class': 'form-control', 'rows': 4}}) }}
+                            <div class="form-text text-muted">Décrivez les ingrédients et caractéristiques du burger</div>
+                            {{ form_errors(formBurger.description) }}
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form_widget(formBurger.disponible, {'attr': {'class': 'form-check-input'}}) }}
+                                {{ form_label(formBurger.disponible, null, {'label_attr': {'class': 'form-check-label'}}) }}
+                            </div>
+                            <div class="form-text text-muted">{{ form_help(formBurger.disponible) }}</div>
+                            {{ form_errors(formBurger.disponible) }}
+                        </div>
+                    </div>
+
+                    <!-- Image -->
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form_label(formBurger.imageFile, null, {'label_attr': {'class': 'form-label'}}) }}
+                            
+                            <!-- Prévisualisation de l'image actuelle -->
+                            {% if burger.image %}
+                            <div class="mb-3">
+                                <div class="border rounded p-2 bg-dark">
+                                    <img src="{{ asset('uploads/burgers/' ~ burger.image) }}" 
+                                         alt="{{ burger.nom }}" 
+                                         class="img-fluid rounded"
+                                         style="max-height: 200px; width: 100%; object-fit: cover;">
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted">Image actuelle</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Upload nouvelle image -->
+                            <div class="mb-3">
+                                {{ form_widget(formBurger.imageFile, {'attr': {'class': 'form-control', 'onchange': 'previewImage(this)'}}) }}
+                                <div class="form-text text-muted">{{ form_help(formBurger.imageFile) }}</div>
+                                {{ form_errors(formBurger.imageFile) }}
+                            </div>
+
+                            <!-- Prévisualisation nouvelle image -->
+                            <div id="imagePreview" class="d-none">
+                                <div class="border rounded p-2 bg-dark">
+                                    <img id="previewImg" 
+                                         class="img-fluid rounded" 
+                                         style="max-height: 200px; width: 100%; object-fit: cover;">
+                                    <div class="text-center mt-2">
+                                        <small class="text-success">Nouvelle image</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <hr class="my-4">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <a href="{{ path('app_burger_list') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Annuler
+                        </a>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>
+                            {% if burger.id %}Modifier{% else %}Ajouter{% endif %} le burger
+                        </button>
+                    </div>
+                </div>
+
+                {{ form_end(formBurger) }}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    function previewImage(input) {
+        const preview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                preview.classList.remove('d-none');
+            };
+            
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            preview.classList.add('d-none');
+        }
+    }
+
+    // Validation côté client
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const nomField = document.querySelector('#burger_nom');
+        const prixField = document.querySelector('#burger_prix');
+
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+
+            // Validation nom
+            if (!nomField.value.trim()) {
+                showFieldError(nomField, 'Le nom du burger est obligatoire');
+                isValid = false;
+            } else if (nomField.value.trim().length < 3) {
+                showFieldError(nomField, 'Le nom doit contenir au moins 3 caractères');
+                isValid = false;
+            } else {
+                clearFieldError(nomField);
+            }
+
+            // Validation prix
+            if (!prixField.value.trim()) {
+                showFieldError(prixField, 'Le prix est obligatoire');
+                isValid = false;
+            } else if (parseFloat(prixField.value) <= 0) {
+                showFieldError(prixField, 'Le prix doit être positif');
+                isValid = false;
+            } else {
+                clearFieldError(prixField);
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+
+        function showFieldError(field, message) {
+            clearFieldError(field);
+            field.classList.add('is-invalid');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback';
+            errorDiv.textContent = message;
+            field.parentNode.appendChild(errorDiv);
+        }
+
+        function clearFieldError(field) {
+            field.classList.remove('is-invalid');
+            const errorFeedback = field.parentNode.querySelector('.invalid-feedback');
+            if (errorFeedback) {
+                errorFeedback.remove();
+            }
+        }
+    });
+</script>
+{% endblock %}

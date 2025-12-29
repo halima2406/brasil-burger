@@ -1,0 +1,303 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Aperçu général de votre activité{% endblock %}
+
+{% block body %}
+    <!-- Stats Grid avec données réelles -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon primary">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ metriques.commandes_jour }}</h3>
+                <p>Commandes du jour</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="fas fa-coins"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ metriques.recettes_jour_formate }}</h3>
+                <p>FCFA - Recettes du jour</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ metriques.commandes_en_cours }}</h3>
+                <p>Commandes en cours</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon danger">
+                <i class="fas fa-times"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ metriques.commandes_annulees }}</h3>
+                <p>Commandes annulées</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+        
+        <!-- Recent Orders avec données réelles -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Commandes récentes</h3>
+                <div class="header-actions">
+                    <button class="btn btn-sm" onclick="location.reload()">Actualiser</button>
+                    <button class="btn btn-sm" onclick="location.href='{{ path('app_commande_list') }}'">Filtrer</button>
+                </div>
+            </div>
+            
+            <table class="orders-table">
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Article</th>
+                        <th>Statut</th>
+                        <th>Montant</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if commandesRecentes is empty %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: #666;">
+                                <i class="fas fa-receipt" style="font-size: 24px; margin-bottom: 10px; opacity: 0.3;"></i>
+                                <p>Aucune commande aujourd'hui</p>
+                            </td>
+                        </tr>
+                    {% else %}
+                        {% for commande in commandesRecentes %}
+                        <tr>
+                            <td>
+                                <div class="order-customer">
+                                    <div class="order-avatar">{{ commande.client_initiales }}</div>
+                                    <div>
+                                        <div class="order-id">{{ commande.client_nom }}</div>
+                                        <small>{{ commande.heure }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ commande.produit_exemple }}</td>
+                            <td><span class="order-status {{ commande.status_badge.class }}">{{ commande.status_badge.text }}</span></td>
+                            <td>{{ commande.prix_formate }} FCFA</td>
+                            <td>
+                                <div class="order-actions">
+                                    <button class="order-action-btn" title="Voir" onclick="voirDetails({{ commande.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="order-action-btn" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Popular Burgers avec données réelles -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Burgers les plus vendus</h3>
+                <a href="{{ path('app_statistiques') }}" class="card-action">Voir tout</a>
+            </div>
+            
+            <div class="popular-items">
+                {% if topBurgers is empty %}
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <i class="fas fa-hamburger" style="font-size: 24px; margin-bottom: 10px; opacity: 0.3;"></i>
+                        <p>Aucune vente aujourd'hui</p>
+                    </div>
+                {% else %}
+                    {% for produit in topBurgers %}
+                    <div class="popular-item">
+                        <div class="product-cell">
+                            <div class="product-image">
+                                <i class="fas fa-hamburger"></i>
+                            </div>
+                            <div class="product-info">
+                                <h4>{{ produit.produit }}</h4>
+                                <p>{{ produit.prix_formate }} FCFA</p>
+                            </div>
+                        </div>
+                        <div class="sales-info">
+                            <div class="sales-number">{{ produit.ventes_jour }} vendues</div>
+                            <div class="sales-revenue">{{ produit.prix_formate }} FCFA</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .header-date {
+            font-size: 14px;
+            color: var(--gray);
+            font-weight: 500;
+        }
+
+        .header-actions .btn-sm {
+            padding: 8px 16px;
+            font-size: 12px;
+            background: var(--light-gray);
+            color: var(--gray);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .header-actions .btn-sm:hover {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .popular-items {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .popular-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .popular-item:last-child {
+            border-bottom: none;
+        }
+
+        .sales-info {
+            text-align: right;
+        }
+
+        .sales-number {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--success);
+            margin-bottom: 2px;
+        }
+
+        .sales-revenue {
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        /* ✅ AJOUT : Styles pour les statuts réels */
+        .order-status.validee {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .order-status.en-cours {
+            background: #fff3e0;
+            color: #f57c00;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .order-status.prete {
+            background: #f3e5f5;
+            color: #7b1fa2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .order-status.terminee {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .order-status.annulee {
+            background: #ffebee;
+            color: #c62828;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Conserver les anciens styles pour compatibilité */
+        .order-status.pending {
+            background: #fff3e0;
+            color: #f57c00;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .order-status.preparing {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .order-status.delivering {
+            background: #f3e5f5;
+            color: #7b1fa2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .order-status.completed {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+    </style>
+
+    <script>
+        // ✅ FONCTION VOIR DÉTAILS (réutilisée des commandes)
+        async function voirDetails(commandeId) {
+            alert('Redirection vers les détails de la commande ' + commandeId);
+            window.location.href = '/admin/commande/list';
+        }
+
+        // Auto-refresh toutes les 2 minutes
+        setInterval(() => {
+            console.log('Mise à jour automatique...');
+            // location.reload(); // Décommentez pour activer le refresh auto
+        }, 120000);
+    </script>
+{% endblock %}

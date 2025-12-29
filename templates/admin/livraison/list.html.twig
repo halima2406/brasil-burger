@@ -1,0 +1,383 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Brasil Burger - Gestion des Livraisons{% endblock %}
+
+{% block page_title %}Gestion des Livraisons{% endblock %}
+{% block page_subtitle %}Assignation et suivi des livraisons en temps réel{% endblock %}
+
+{% block body %}
+<div style="margin-bottom: 30px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; font-weight: 600; color: #1a1a1a; margin: 0; padding: 0;">Livreurs disponibles</h2>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+        {% if livreurs is defined and livreurs|length > 0 %}
+            {% for livreur in livreurs %}
+            <div onclick="selectLivreur(this)" 
+                 data-livreur="{{ livreur.nom }}" 
+                 data-livreur-id="{{ livreur.id }}"
+                 style="background: #ffffff; border-radius: 14px; padding: 20px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: all 0.3s ease; border: 2px solid transparent; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative;"
+                 onmouseover="this.style.borderColor='#2e7d32'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(46, 125, 50, 0.15)';"
+                 onmouseout="if(!this.classList.contains('selected')){this.style.borderColor='transparent'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)';}">
+                
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 600; font-size: 16px; flex-shrink: 0;">
+                    {{ livreur.nom|slice(0, 2)|upper }}
+                </div>
+                <div style="flex: 1;">
+                    <h4 style="font-size: 14px; font-weight: 600; color: #1a1a1a; margin: 0 0 4px 0; padding: 0; line-height: 1.2;">{{ livreur.nom }}</h4>
+                    <p style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px; margin: 0; padding: 0; line-height: 1.2;">
+                        <i class="fas fa-star" style="color: #f9a825; font-size: 12px;"></i> 4.{{ random(6, 9) }} · {{ random(50, 200) }} livraisons
+                    </p>
+                </div>
+                <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0;">
+                    <span style="width: 10px; height: 10px; border-radius: 50%; display: block; background: {% if loop.index <= 2 %}#4caf50{% elseif loop.index == 3 %}#ff9800{% else %}#666{% endif %};"></span>
+                    <span style="font-size: 11px; color: #666; margin: 0; padding: 0;">{% if loop.index <= 2 %}{{ random(0, 2) }} en cours{% elseif loop.index == 3 %}2 en cours{% else %}Hors ligne{% endif %}</span>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div onclick="selectLivreur(this)" 
+                 data-livreur="Moussa Diop" 
+                 data-livreur-id="1"
+                 style="background: #ffffff; border-radius: 14px; padding: 20px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: all 0.3s ease; border: 2px solid transparent; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"
+                 onmouseover="this.style.borderColor='#2e7d32'; this.style.transform='translateY(-2px)';"
+                 onmouseout="if(!this.classList.contains('selected')){this.style.borderColor='transparent'; this.style.transform='translateY(0)';}">
+                
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 600; font-size: 16px;">MD</div>
+                <div style="flex: 1;">
+                    <h4 style="font-size: 14px; font-weight: 600; color: #1a1a1a; margin: 0 0 4px 0;">Moussa Diop</h4>
+                    <p style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px; margin: 0;">
+                        <i class="fas fa-star" style="color: #f9a825;"></i> 4.8 · 156 livraisons
+                    </p>
+                </div>
+                <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+                    <span style="width: 10px; height: 10px; border-radius: 50%; background: #4caf50;"></span>
+                    <span style="font-size: 11px; color: #666;">0 en cours</span>
+                </div>
+            </div>
+            
+            <div onclick="selectLivreur(this)" 
+                 data-livreur="Ibrahima Fall" 
+                 data-livreur-id="2"
+                 style="background: #ffffff; border-radius: 14px; padding: 20px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: all 0.3s ease; border: 2px solid transparent; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"
+                 onmouseover="this.style.borderColor='#2e7d32'; this.style.transform='translateY(-2px)';"
+                 onmouseout="if(!this.classList.contains('selected')){this.style.borderColor='transparent'; this.style.transform='translateY(0)';}">
+                
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 600; font-size: 16px;">IF</div>
+                <div style="flex: 1;">
+                    <h4 style="font-size: 14px; font-weight: 600; color: #1a1a1a; margin: 0 0 4px 0;">Ibrahima Fall</h4>
+                    <p style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px; margin: 0;">
+                        <i class="fas fa-star" style="color: #f9a825;"></i> 4.9 · 203 livraisons
+                    </p>
+                </div>
+                <div style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+                    <span style="width: 10px; height: 10px; border-radius: 50%; background: #4caf50;"></span>
+                    <span style="font-size: 11px; color: #666;">1 en cours</span>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div style="display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap;">
+    <button onclick="filterZone('all')" 
+            style="padding: 10px 20px; background: #2e7d32; border: 2px solid #2e7d32; border-radius: 10px; font-size: 14px; font-weight: 500; color: #ffffff; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; outline: none;"
+            id="zone-all">
+        Toutes les zones
+        <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600;">{{ commandesEnAttente|length }}</span>
+    </button>
+    {% if zones is defined and zones|length > 0 %}
+        {% for zone in zones %}
+            {% set count = 0 %}
+            {% for commande in commandesEnAttente %}
+                {% if commande.zone_id == zone.id %}
+                    {% set count = count + 1 %}
+                {% endif %}
+            {% endfor %}
+            {% if count > 0 %}
+            <button onclick="filterZone('{{ zone.id }}')" 
+                    style="padding: 10px 20px; background: #ffffff; border: 2px solid transparent; border-radius: 10px; font-size: 14px; font-weight: 500; color: #666; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; outline: none;"
+                    onmouseover="this.style.borderColor='#2e7d32'; this.style.color='#2e7d32';"
+                    onmouseout="if(!this.classList.contains('active')){this.style.borderColor='transparent'; this.style.color='#666';}">
+                {{ zone.quartier }}
+                <span style="background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600;">{{ count }}</span>
+            </button>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+</div>
+
+<div style="background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-top: 20px;">
+    <div style="padding: 20px; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; align-items: center; background: #ffffff;">
+        <h3 style="font-size: 16px; font-weight: 600; color: #1a1a1a; margin: 0; padding: 0;">Commandes à affecter</h3>
+        <button id="assignBtn" 
+                disabled 
+                onclick="assignOrders()"
+                style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-decoration: none; border: none; background: #ccc; color: #ffffff; outline: none;">
+            <i class="fas fa-check"></i>
+            Affecter la sélection
+        </button>
+    </div>
+    <div style="padding: 20px; background: #ffffff;">
+        {% if commandesEnAttente is empty %}
+            <div style="text-align: center; padding: 60px 20px; color: #666;">
+                <i class="fas fa-check-circle" style="font-size: 64px; color: #e0e0e0; margin-bottom: 20px; display: block;"></i>
+                <h3 style="font-size: 18px; color: #1a1a1a; margin: 0 0 8px 0;">Toutes les commandes sont assignées !</h3>
+                <p style="font-size: 14px; color: #666; margin: 0;">Aucune commande en attente d'assignation.</p>
+            </div>
+        {% else %}
+            {% for commande in commandesEnAttente %}
+            <div data-zone="{{ commande.zone_id }}" 
+                 data-commande-id="{{ commande.id }}"
+                 style="display: flex; align-items: center; gap: 15px; padding: 15px; border: 2px solid #f5f5f5; border-radius: 12px; margin-bottom: 12px; transition: all 0.3s ease; background: #ffffff; position: relative;"
+                 onmouseover="this.style.borderColor='#2e7d32'; this.style.background='rgba(46, 125, 50, 0.02)'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 2px 8px rgba(46, 125, 50, 0.1)';"
+                 onmouseout="if(!this.classList.contains('selected')){this.style.borderColor='#f5f5f5'; this.style.background='#ffffff'; this.style.transform='translateY(0)'; this.style.boxShadow='none';}">
+                
+                <input type="checkbox" 
+                       onchange="updateSelection()"
+                       style="width: 22px; height: 22px; accent-color: #2e7d32; cursor: pointer; flex-shrink: 0;">
+                
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                        <span style="font-weight: 700; color: #2e7d32; font-size: 15px; margin: 0; padding: 0;">#{{ commande.numero_commande }}</span>
+                        <span style="font-size: 12px; color: #666; background: #f5f5f5; padding: 2px 8px; border-radius: 10px; margin: 0;">{{ commande.date_formate }}</span>
+                    </div>
+                    <p style="font-size: 14px; color: #1a1a1a; font-weight: 500; margin: 0 0 4px 0; padding: 0;">{{ commande.client_nom ?? 'Client' }} · {{ commande.telephone_client }}</p>
+                    <p style="font-size: 13px; color: #666; display: flex; align-items: center; gap: 5px; margin: 0; padding: 0;">
+                        <i class="fas fa-map-marker-alt" style="color: #e53935; font-size: 12px;"></i>
+                        {{ commande.adresse_livraison }}
+                    </p>
+                    <span style="display: inline-block; padding: 4px 12px; background: #f5f5f5; border-radius: 15px; font-size: 11px; font-weight: 600; color: #666; margin-top: 8px;">{{ commande.quartier }}</span>
+                </div>
+                <div style="text-align: right; min-width: 120px; flex-shrink: 0;">
+                    <p style="font-size: 13px; color: #666; margin: 0 0 4px 0; padding: 0;">{{ commande.nb_produits ?? 1 }} article{{ commande.nb_produits > 1 ? 's' : '' }}</p>
+                    <p style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin: 0; padding: 0;">{{ commande.total_formate }}</p>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% for livraison in livraisonsEnCours %}
+            <div data-zone="{{ livraison.zone_id }}" style="opacity: 0.7; display: flex; align-items: center; gap: 15px; padding: 15px; border: 2px solid #f5f5f5; border-radius: 12px; margin-bottom: 12px; background: #ffffff;">
+                <div style="display: flex; align-items: center; gap: 8px; background: #e8f5e9; padding: 8px 14px; border-radius: 10px; min-width: 140px; flex-shrink: 0;">
+                    <div style="width: 28px; height: 28px; border-radius: 8px; background: #2e7d32; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; flex-shrink: 0;">{{ livraison.livreur_nom|slice(0, 2)|upper }}</div>
+                    <span style="font-size: 13px; font-weight: 600; color: #2e7d32; margin: 0; padding: 0;">{{ livraison.livreur_nom }}</span>
+                </div>
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                        <span style="font-weight: 700; color: #2e7d32; font-size: 15px;">#{{ livraison.numero_commande }}</span>
+                        <span style="font-size: 12px; color: #666; background: #f5f5f5; padding: 2px 8px; border-radius: 10px;">{{ livraison.date_formate }}</span>
+                    </div>
+                    <p style="font-size: 14px; color: #1a1a1a; font-weight: 500; margin: 0 0 4px 0;">{{ livraison.client_nom ?? 'Client' }}</p>
+                    <p style="font-size: 13px; color: #666; display: flex; align-items: center; gap: 5px; margin: 0;">
+                        <i class="fas fa-map-marker-alt" style="color: #e53935;"></i>
+                        {{ livraison.adresse_livraison }}
+                    </p>
+                    <span style="display: inline-block; padding: 4px 12px; background: #f5f5f5; border-radius: 15px; font-size: 11px; font-weight: 600; color: #666; margin-top: 8px;">{{ livraison.quartier }}</span>
+                </div>
+                <div style="text-align: right; min-width: 120px;">
+                    <p style="font-size: 13px; color: #666; margin: 0 0 4px 0;">{{ livraison.nb_produits ?? 1 }} article{{ livraison.nb_produits > 1 ? 's' : '' }}</p>
+                    <p style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin: 0;">{{ livraison.total_formate }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<div id="modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(5px);">
+    <div style="background: #ffffff; border-radius: 20px; width: 100%; max-width: 450px; padding: 30px; text-align: center; animation: modalSlideIn 0.3s ease; margin: 20px;">
+        <div style="width: 70px; height: 70px; border-radius: 50%; background: #e8f5e9; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+            <i class="fas fa-check" style="font-size: 30px; color: #4caf50;"></i>
+        </div>
+        <h2 style="font-size: 20px; color: #1a1a1a; margin: 0 0 10px 0;">Livraisons affectées !</h2>
+        <p id="modalMessage" style="font-size: 14px; color: #666; margin: 0 0 25px 0;">Les commandes ont été affectées avec succès.</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button onclick="closeModal()" style="background: #f5f5f5; color: #1a1a1a; padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600;">Fermer</button>
+            <button onclick="voirLivraisons()" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 10px; font-weight: 600; border: none; background: #2e7d32; color: #ffffff; cursor: pointer;">
+                <i class="fas fa-motorcycle"></i>
+                Voir les livraisons
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes modalSlideIn {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@media (max-width: 1200px) {
+    div[style*="grid-template-columns: repeat(4, 1fr)"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 768px) {
+    div[style*="grid-template-columns: repeat(4, 1fr)"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+
+<script>
+    let selectedLivreur = null;
+    let selectedLivreurId = null;
+    let selectedOrders = [];
+
+    function selectLivreur(card) {
+        if (card.querySelector('span[style*="background: #666"]')) {
+            alert('Ce livreur est hors ligne');
+            return;
+        }
+
+        document.querySelectorAll('div[data-livreur]').forEach(c => {
+            c.classList.remove('selected');
+            c.style.borderColor = 'transparent';
+            c.style.background = '#ffffff';
+        });
+        
+        card.classList.add('selected');
+        card.style.borderColor = '#2e7d32';
+        card.style.background = '#e8f5e9';
+        
+        selectedLivreur = card.dataset.livreur;
+        selectedLivreurId = card.dataset.livreurId;
+        updateAssignButton();
+    }
+
+    function updateSelection() {
+        selectedOrders = [];
+        document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+            const orderRow = cb.closest('div[data-commande-id]');
+            const commandeId = orderRow.dataset.commandeId;
+            if (commandeId) {
+                selectedOrders.push({
+                    element: orderRow,
+                    id: commandeId
+                });
+            }
+        });
+
+        document.querySelectorAll('div[data-commande-id]').forEach(row => {
+            const checkbox = row.querySelector('input[type="checkbox"]');
+            if (checkbox && checkbox.checked) {
+                row.classList.add('selected');
+                row.style.borderColor = '#2e7d32';
+                row.style.background = '#e8f5e9';
+            } else {
+                row.classList.remove('selected');
+                row.style.borderColor = '#f5f5f5';
+                row.style.background = '#ffffff';
+            }
+        });
+
+        updateAssignButton();
+    }
+
+    function updateAssignButton() {
+        const btn = document.getElementById('assignBtn');
+        if (selectedLivreur && selectedOrders.length > 0) {
+            btn.disabled = false;
+            btn.style.background = '#2e7d32';
+            btn.style.cursor = 'pointer';
+            btn.innerHTML = `<i class="fas fa-check"></i> Affecter ${selectedOrders.length} commande(s)`;
+        } else {
+            btn.disabled = true;
+            btn.style.background = '#ccc';
+            btn.style.cursor = 'not-allowed';
+            btn.innerHTML = '<i class="fas fa-check"></i> Affecter la sélection';
+        }
+    }
+
+    function filterZone(zoneId) {
+        document.querySelectorAll('button[onclick^="filterZone"]').forEach(btn => {
+            btn.style.background = '#ffffff';
+            btn.style.color = '#666';
+            btn.style.borderColor = 'transparent';
+            btn.classList.remove('active');
+        });
+
+        const activeBtn = zoneId === 'all' ? document.getElementById('zone-all') : document.querySelector(`button[onclick="filterZone('${zoneId}')"]`);
+        if (activeBtn) {
+            activeBtn.style.background = '#2e7d32';
+            activeBtn.style.color = '#ffffff';
+            activeBtn.style.borderColor = '#2e7d32';
+            activeBtn.classList.add('active');
+        }
+
+        document.querySelectorAll('div[data-zone]').forEach(row => {
+            if (zoneId === 'all' || row.dataset.zone === zoneId) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    async function assignOrders() {
+        if (!selectedLivreurId || selectedOrders.length === 0) {
+            alert('Veuillez sélectionner un livreur et au moins une commande');
+            return;
+        }
+
+        try {
+            let successCount = 0;
+            for (const order of selectedOrders) {
+                const formData = new FormData();
+                formData.append('livreur_id', selectedLivreurId);
+
+                const response = await fetch(`{{ path('app_livraison_assigner', {commandeId: 'PLACEHOLDER'}) }}`.replace('PLACEHOLDER', order.id), {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    successCount++;
+                }
+            }
+
+            if (successCount > 0) {
+                document.getElementById('modalMessage').textContent = 
+                    `${successCount} commande(s) ont été affectées à ${selectedLivreur}.`;
+                document.getElementById('modal').style.display = 'flex';
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            alert('Erreur lors de l\'assignation');
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+        selectedLivreur = null;
+        selectedLivreurId = null;
+        selectedOrders = [];
+        
+        document.querySelectorAll('div[data-livreur]').forEach(c => {
+            c.classList.remove('selected');
+            c.style.borderColor = 'transparent';
+            c.style.background = '#ffffff';
+        });
+        
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        document.querySelectorAll('div[data-commande-id]').forEach(row => {
+            row.classList.remove('selected');
+            row.style.borderColor = '#f5f5f5';
+            row.style.background = '#ffffff';
+        });
+        
+        updateAssignButton();
+        setTimeout(() => location.reload(), 500);
+    }
+
+    function voirLivraisons() {
+        window.location.href = '{{ path('app_livraison_suivi') }}';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        updateAssignButton();
+    });
+</script>
+{% endblock %}
