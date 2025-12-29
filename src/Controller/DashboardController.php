@@ -50,9 +50,22 @@ class DashboardController extends AbstractController
             $commande['client_initiales'] = 'C' . $commande['client_id'];
             $commande['prix_formate'] = number_format($commande['montant_total'], 0, ',', ' ');
             $commande['heure'] = date('H:i', strtotime($commande['date_commande']));
+            $commande['status_badge'] = $this->getStatusBadge($commande['statut']);
             $commande['produit_exemple'] = 'Produit test';
         }
 
         return $commandes;
+    }
+
+    private function getStatusBadge(?string $statut): array
+    {
+        return match($statut) {
+            'VALIDEE' => ['text' => 'Validée', 'class' => 'validee'],
+            'EN_COURS' => ['text' => 'En cours', 'class' => 'en-cours'],
+            'PRETE' => ['text' => 'Prête', 'class' => 'prete'],
+            'LIVREE', 'TERMINEE' => ['text' => 'Terminée', 'class' => 'terminee'],
+            'ANNULEE' => ['text' => 'Annulée', 'class' => 'annulee'],
+            default => ['text' => 'En attente', 'class' => 'en-attente']
+        };
     }
 }
