@@ -100,6 +100,43 @@ class ComplementController extends AbstractController
         }
     }
 
+    #[Route('/edit/{id}', name: 'app_complement_edit', methods: ['POST'])]
+    public function edit(int $id, Request $request, Connection $connection): JsonResponse
+    {
+        try {
+            $nom = trim($request->request->get('nom'));
+            $prix = (float) $request->request->get('prix');
+
+            if (empty($nom)) {
+                return $this->json(['error' => 'Le nom est requis'], 400);
+            }
+
+            if ($prix < 0) {
+                return $this->json(['error' => 'Le prix doit être positif'], 400);
+            }
+
+            $complement = $connection->fetchAssociative("
+                SELECT id FROM produit WHERE id = ?
+            ", [$id]);
+
+            if (!$complement) {
+                return $this->json(['error' => 'Complément non trouvé'], 404);
+            }
+
+            $connection->executeStatement("
+                UPDATE produit SET nom = ?, prix = ? WHERE id = ?
+            ", [$nom, $prix, $id]);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Complément modifié avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     private function getWhereConditionForFilter(string $filter): string
     {
         switch ($filter) {
