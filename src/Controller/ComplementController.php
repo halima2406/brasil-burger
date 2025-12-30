@@ -5,6 +5,7 @@ namespace App\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\DBAL\Connection;
 
@@ -46,6 +47,56 @@ class ComplementController extends AbstractController
 
         } catch (\Exception $e) {
             return new Response("Erreur ComplementController: " . $e->getMessage());
+        }
+    }
+
+    #[Route('/details/{id}', name: 'app_complement_details', methods: ['GET'])]
+    public function details(int $id, Connection $connection): JsonResponse
+    {
+        try {
+            $complement = $connection->fetchAssociative("
+                SELECT 
+                    p.id, p.nom, p.prix, p.type_produit, p.type_complement,
+                    COUNT(lc.id) as ventes_totales,
+                    SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN lc.quantite ELSE 0 END) as ventes_jour,
+                    SUM(lc.prix_unitaire * lc.quantite) as chiffre_affaires_total
+                FROM produit p
+                LEFT JOIN ligne_commande lc ON p.id = lc.produit_id
+                LEFT JOIN commande c ON lc.commande_id = c.id AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+                WHERE p.id = ?
+                GROUP BY p.id, p.nom, p.prix, p.type_produit, p.type_complement
+            ", [$id]);
+
+            if (!$complement) {
+                return $this->json(['error' => 'Complément non trouvé'], 404);
+            }
+
+            $commandesRecentes = $connection->fetchAllAssociative("
+                SELECT c.id, c.date_commande, lc.quantite, lc.prix_unitaire, c.statut
+                FROM ligne_commande lc
+                JOIN commande c ON lc.commande_id = c.id
+                WHERE lc.produit_id = ? AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+                ORDER BY c.date_commande DESC
+                LIMIT 10
+            ", [$id]);
+
+            $complement['prix_formate'] = number_format($complement['prix'], 0, ',', ' ') . ' FCFA';
+            $complement['chiffre_affaires_formate'] = number_format($complement['chiffre_affaires_total'], 0, ',', ' ') . ' FCFA';
+            $complement['ventes_jour'] = (int) $complement['ventes_jour'];
+            $complement['ventes_totales'] = (int) $complement['ventes_totales'];
+
+            foreach ($commandesRecentes as &$commande) {
+                $commande['date_formate'] = date('d/m/Y H:i', strtotime($commande['date_commande']));
+                $commande['total_formate'] = number_format($commande['quantite'] * $commande['prix_unitaire'], 0, ',', ' ') . ' FCFA';
+            }
+
+            return $this->json([
+                'complement' => $complement,
+                'commandes' => $commandesRecentes
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
         }
     }
 
