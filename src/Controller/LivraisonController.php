@@ -266,4 +266,102 @@ class LivraisonController extends AbstractController
             return new Response("Erreur suivi: " . $e->getMessage());
         }
     }
+
+    #[Route('/changer-statut/{commandeId}', name: 'app_livraison_changer_statut', methods: ['POST'])]
+    public function changerStatut(int $commandeId, Request $request, Connection $connection): JsonResponse
+    {
+        try {
+            $nouveauStatut = $request->request->get('statut');
+            
+            $statutsValides = ['ASSIGNEE', 'EN_ROUTE', 'LIVREE', 'PROBLEME'];
+            if (!in_array($nouveauStatut, $statutsValides)) {
+                return $this->json(['error' => 'Statut invalide'], 400);
+            }
+
+            $result = $connection->executeStatement("
+                UPDATE commande 
+                SET statut_livraison = ?,
+                    statut = CASE 
+                        WHEN ? = 'LIVREE' THEN 'TERMINEE'
+                        ELSE statut 
+                    END
+                WHERE id = ? AND livreur_id IS NOT NULL
+            ", [$nouveauStatut, $nouveauStatut, $commandeId]);
+
+            if ($result === 0) {
+                return $this->json(['error' => 'Commande non trouvée'], 404);
+            }
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Statut mis à jour avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    #[Route('/details/{commandeId}', name: 'app_livraison_details', methods: ['GET'])]
+    public function details(int $commandeId, Connection $connection): JsonResponse
+    {
+        try {
+            $commande = $connection->fetchAssociative("
+                SELECT 
+                    c.id,
+                    'CMD' || c.id as numero_commande,
+                    c.date_commande,
+                    c.montant_total as total,
+                    'Adresse livraison' as adresse_livraison,
+                    'Téléphone client' as telephone_client,
+                    'Note commande' as note_commande,
+                    c.statut,
+                    COALESCE(c.statut_livraison, 'EN_ATTENTE') as statut_livraison,
+                    'Client' as client_nom,
+                    'client@email.com' as client_email,
+                    l.nom as livreur_nom,
+                    l.telephone as livreur_tel,
+                    z.quartier,
+                    z.prix as prix_livraison
+                FROM commande c
+                LEFT JOIN livreur l ON c.livreur_id = l.id
+                LEFT JOIN zone z ON c.zone_id = z.id
+                WHERE c.id = ?
+            ", [$commandeId]);
+
+            if (!$commande) {
+                return $this->json(['error' => 'Commande non trouvée'], 404);
+            }
+
+            $produits = $connection->fetchAllAssociative("
+                SELECT 
+                    p.nom,
+                    lc.quantite,
+                    lc.prix_unitaire,
+                    (lc.quantite * lc.prix_unitaire) as sous_total
+                FROM ligne_commande lc
+                JOIN produit p ON lc.produit_id = p.id
+                WHERE lc.commande_id = ?
+                ORDER BY p.nom ASC
+            ", [$commandeId]);
+
+            $commande['total_formate'] = number_format($commande['total'], 0, ',', ' ') . ' FCFA';
+            $commande['prix_livraison_formate'] = number_format($commande['prix_livraison'] ?? 0, 0, ',', ' ') . ' FCFA';
+            $commande['total_final'] = number_format($commande['total'] + ($commande['prix_livraison'] ?? 0), 0, ',', ' ') . ' FCFA';
+            $commande['date_formate'] = date('d/m/Y H:i', strtotime($commande['date_commande']));
+
+            foreach ($produits as &$produit) {
+                $produit['prix_unitaire_formate'] = number_format($produit['prix_unitaire'], 0, ',', ' ') . ' FCFA';
+                $produit['sous_total_formate'] = number_format($produit['sous_total'], 0, ',', ' ') . ' FCFA';
+            }
+
+            return $this->json([
+                'commande' => $commande,
+                'produits' => $produits
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }
