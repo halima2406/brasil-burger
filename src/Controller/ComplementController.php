@@ -26,9 +26,13 @@ class ComplementController extends AbstractController
                     p.nom,
                     p.prix,
                     p.type_produit,
-                    p.type_complement
+                    p.type_complement,
+                    COUNT(lc.id) as ventes_totales
                 FROM produit p
+                LEFT JOIN ligne_commande lc ON p.id = lc.produit_id
+                LEFT JOIN commande c ON lc.commande_id = c.id AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
                 WHERE $whereCondition
+                GROUP BY p.id, p.nom, p.prix, p.type_produit, p.type_complement
                 ORDER BY p.nom ASC
                 LIMIT 10
             ");
@@ -36,12 +40,29 @@ class ComplementController extends AbstractController
             foreach ($complements as &$complement) {
                 $complement['prix_formate'] = number_format($complement['prix'], 0, ',', ' ') . ' FCFA';
                 $complement['disponible'] = $complement['prix'] > 0;
-                $complement['description'] = 'Complément savoureux Brasil Burger';
+                $complement['description'] = $this->getDescription($complement['nom'], $complement['type_complement'] ?: $complement['type_produit']);
+                $complement['image_url'] = $this->getImageUrl($complement['nom'], $complement['type_complement'] ?: $complement['type_produit']);
+                $complement['popularite'] = $this->getPopularite((int) $complement['ventes_totales']);
+                
+                $typeAffichage = $complement['type_complement'] ?: $complement['type_produit'];
+                switch ($typeAffichage) {
+                    case 'FRITE':
+                        $complement['categorie'] = 'frite';
+                        break;
+                    case 'BOISSON':
+                        $complement['categorie'] = 'boisson';
+                        break;
+                    default:
+                        $complement['categorie'] = 'accompagnement';
+                }
             }
+
+            $stats = $this->getStatsComplements($connection);
 
             return $this->render('admin/complement/list.html.twig', [
                 'complements' => $complements,
                 'filter' => $filter,
+                'stats' => $stats,
                 'totalComplements' => count($complements)
             ]);
 
@@ -181,6 +202,89 @@ class ComplementController extends AbstractController
             case 'tous':
             default:
                 return "p.type_complement IN ('FRITE', 'BOISSON') OR p.type_produit = 'COMPLEMENT'";
+        }
+    }
+
+    private function getStatsComplements(Connection $connection): array
+    {
+        try {
+            $totalComplements = $connection->fetchOne("
+                SELECT COUNT(*) FROM produit p
+                WHERE p.type_complement IN ('FRITE', 'BOISSON') OR p.type_produit = 'COMPLEMENT'
+            ") ?: 0;
+
+            $accompagnements = $connection->fetchOne("
+                SELECT COUNT(*) FROM produit p WHERE p.type_complement = 'FRITE'
+            ") ?: 0;
+
+            $boissons = $connection->fetchOne("
+                SELECT COUNT(*) FROM produit p WHERE p.type_complement = 'BOISSON'
+            ") ?: 0;
+
+            $complementPopulaire = $connection->fetchAssociative("
+                SELECT p.nom, COUNT(lc.id) as ventes
+                FROM produit p
+                LEFT JOIN ligne_commande lc ON p.id = lc.produit_id
+                LEFT JOIN commande c ON lc.commande_id = c.id AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+                WHERE p.type_complement IN ('FRITE', 'BOISSON') OR p.type_produit = 'COMPLEMENT'
+                GROUP BY p.id, p.nom
+                ORDER BY ventes DESC
+                LIMIT 1
+            ");
+
+            return [
+                'total_complements' => (int) $totalComplements,
+                'accompagnements' => (int) $accompagnements,
+                'boissons' => (int) $boissons,
+                'complement_populaire' => $complementPopulaire ? $complementPopulaire['nom'] : 'Aucun'
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'total_complements' => 0,
+                'accompagnements' => 0,
+                'boissons' => 0,
+                'complement_populaire' => 'Erreur'
+            ];
+        }
+    }
+
+    private function getPopularite(int $ventes): string
+    {
+        if ($ventes >= 50) return 'Très populaire';
+        if ($ventes >= 20) return 'Populaire';
+        if ($ventes >= 5) return 'Modéré';
+        if ($ventes > 0) return 'Peu vendu';
+        return 'Jamais vendu';
+    }
+
+    private function getDescription(string $nom, string $type): string
+    {
+        switch ($type) {
+            case 'BOISSON':
+                return 'Boisson rafraîchissante pour accompagner votre repas';
+            case 'FRITE':
+                return stripos($nom, 'épicée') !== false ? 'Frites relevées aux épices du chef' : 'Délicieuses frites dorées et croustillantes';
+            default:
+                return 'Accompagnement savoureux pour vos burgers';
+        }
+    }
+
+    private function getImageUrl(string $nom, string $type): string
+    {
+        switch ($type) {
+            case 'BOISSON':
+                if (stripos($nom, 'coca') !== false) {
+                    return 'https://images.unsplash.com/photo-1546171753-97d7676e4602?w=100&h=100&fit=crop';
+                } elseif (stripos($nom, 'sprite') !== false) {
+                    return 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=100&h=100&fit=crop';
+                } else {
+                    return 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=100&h=100&fit=crop';
+                }
+            case 'FRITE':
+                return 'https://images.unsplash.com/photo-1576107232684-1279f390859f?w=100&h=100&fit=crop';
+            default:
+                return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=100&h=100&fit=crop';
         }
     }
 }
