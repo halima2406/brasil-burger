@@ -3,14 +3,17 @@
 namespace App\Service\Impl;
 
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\String\Slugger\SluggerInterface;
 
 class FileUploaderService
 {
     private string $uploadsDirectory;
+    private SluggerInterface $slugger;
 
-    public function __construct(string $uploadsDirectory)
+    public function __construct(string $uploadsDirectory, SluggerInterface $slugger)
     {
         $this->uploadsDirectory = $uploadsDirectory;
+        $this->slugger = $slugger; 
     }
 
     public function upload(UploadedFile $file): string
