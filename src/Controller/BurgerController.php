@@ -5,13 +5,81 @@ namespace App\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\DBAL\Connection;
 
 #[Route('/admin/burger')]
 class BurgerController extends AbstractController
 {
-    /*#[Route('/list', name: 'app_burger_list')]
+    #[Route('/list', name: 'app_burger_list')]
+    public function list(Request $request, Connection $connection): Response
+    {
+        try {
+            $search = $request->query->get('search', '');
+            $page = max(1, (int) $request->query->get('page', 1));
+            $perPage = 5;
+            $offset = ($page - 1) * $perPage;
+
+            $whereCondition = "p.type_produit = 'BURGER'";
+            $params = [];
+
+            if (!empty($search)) {
+                $whereCondition .= " AND p.nom LIKE ?";
+                $params[] = '%' . $search . '%';
+            }
+
+            $totalBurgers = $connection->fetchOne("
+                SELECT COUNT(*) FROM produit p WHERE $whereCondition
+            ", $params) ?: 0;
+
+            $burgers = $connection->fetchAllAssociative("
+                SELECT p.id, p.nom, p.prix, p.type_produit,
+                       COALESCE(SUM(lc.quantite), 0) as ventes_totales,
+                       COALESCE(SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN lc.quantite ELSE 0 END), 0) as ventes_jour
+                FROM produit p 
+                LEFT JOIN ligne_commande lc ON p.id = lc.produit_id
+                LEFT JOIN commande c ON lc.commande_id = c.id AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+                WHERE $whereCondition
+                GROUP BY p.id, p.nom, p.prix, p.type_produit
+                ORDER BY p.nom ASC
+                LIMIT $perPage OFFSET $offset
+            ", $params);
+
+            foreach ($burgers as &$burger) {
+                $burger['prix_formate'] = number_format($burger['prix'], 0, ',', ' ');
+                $burger['disponible'] = $burger['prix'] > 0;
+                $burger['statut'] = $burger['disponible'] ? 'Actif' : 'Inactif';
+                $burger['archive'] = false;
+                $burger['description'] = $this->getDescriptionBurger($burger['nom']);
+            }
+
+            $totalPages = ceil($totalBurgers / $perPage);
+            
+            return $this->render('admin/burger/list.html.twig', [
+                'burgers' => $burgers,
+                'search' => $search,
+                'pageEnCours' => $page,
+                'nbrePage' => $totalPages,
+                'pagination' => [
+                    'current_page' => $page,
+                    'total_pages' => $totalPages,
+                    'total_items' => $totalBurgers,
+                    'per_page' => $perPage,
+                    'has_previous' => $page > 1,
+                    'has_next' => $page < $totalPages,
+                    'previous_page' => $page > 1 ? $page - 1 : null,
+                    'next_page' => $page < $totalPages ? $page + 1 : null,
+                    'pages' => range(1, $totalPages)
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return new Response("Erreur BurgerController: " . $e->getMessage());
+        }
+    }
+
+     /*#[Route('/list', name: 'app_burger_list')]
     public function list(Request $request, Connection $connection): Response
     {
         $page = max(1, (int) $request->query->get('page', 1));
@@ -55,57 +123,10 @@ class BurgerController extends AbstractController
         ], $pagination));
     }*/
 
-
-    #[Route('/list', name: 'app_burger_list')]
-    public function list(Request $request, Connection $connection): Response
-    {
-        $page = max(1, (int) $request->query->get('page', 1));
-        $perPage = 10;
-        $offset = ($page - 1) * $perPage;
-
-        $totalBurgers = $connection->fetchOne("
-            SELECT COUNT(*) FROM produit p WHERE p.type_produit = 'BURGER'
-        ") ?: 0;
-
-        $burgers = $connection->fetchAllAssociative("
-            SELECT p.id, p.nom, p.prix, p.type_produit,
-                COALESCE(SUM(lc.quantite), 0) as ventes_totales,
-                COALESCE(SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN lc.quantite ELSE 0 END), 0) as ventes_jour
-            FROM produit p 
-            LEFT JOIN ligne_commande lc ON p.id = lc.produit_id
-            LEFT JOIN commande c ON lc.commande_id = c.id AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
-            WHERE p.type_produit = 'BURGER'
-            GROUP BY p.id, p.nom, p.prix, p.type_produit
-            ORDER BY p.nom ASC
-            LIMIT $perPage OFFSET $offset
-        ");
-
-        foreach ($burgers as &$burger) {
-            $burger['prix_formate'] = number_format($burger['prix'], 0, ',', ' ');
-            $burger['disponible'] = $burger['prix'] > 0;
-            $burger['statut'] = $burger['disponible'] ? 'Actif' : 'Inactif';
-            $burger['archive'] = false;
-            
-        
-            $burger['description'] = $this->getDescriptionBurger($burger['nom']);
-        }
-
-        $totalPages = ceil($totalBurgers / $perPage);
-        $pagination = [
-            'pageEnCours' => $page,
-            'nbrePage' => $totalPages,
-        ];
-
-        return $this->render('admin/burger/list.html.twig', array_merge([
-            'burgers' => $burgers
-        ], $pagination));
-    }
-
-    #[Route('/details/{id}', name: 'app_burger_details')]
-    public function details(int $id, Connection $connection): Response
+    #[Route('/details/{id}', name: 'app_burger_details', methods: ['GET'])]
+    public function details(int $id, Connection $connection): JsonResponse
     {
         try {
-           
             $burger = $connection->fetchAssociative("
                 SELECT p.id, p.nom, p.prix, p.type_produit,
                        COALESCE(SUM(lc.quantite), 0) as ventes_totales,
@@ -122,7 +143,6 @@ class BurgerController extends AbstractController
                 return $this->json(['error' => 'Burger non trouvé'], 404);
             }
 
-      
             $commandes = $connection->fetchAllAssociative("
                 SELECT c.date_commande, lc.quantite, lc.montant_total
                 FROM ligne_commande lc
@@ -132,7 +152,6 @@ class BurgerController extends AbstractController
                 LIMIT 10
             ", [$id]);
 
-          
             $burger['prix_formate'] = number_format($burger['prix'], 0, ',', ' ');
             $burger['chiffre_affaires_formate'] = number_format($burger['chiffre_affaires'], 0, ',', ' ');
             $burger['disponible'] = $burger['prix'] > 0;
@@ -154,7 +173,7 @@ class BurgerController extends AbstractController
     }
 
     #[Route('/edit/{id}', name: 'app_burger_edit', methods: ['POST'])]
-    public function edit(int $id, Request $request, Connection $connection): Response
+    public function edit(int $id, Request $request, Connection $connection): JsonResponse
     {
         try {
             $nom = $request->request->get('nom');
@@ -187,7 +206,7 @@ class BurgerController extends AbstractController
     }
 
     #[Route('/delete/{id}', name: 'app_burger_delete', methods: ['POST'])]
-    public function delete(int $id, Connection $connection): Response
+    public function delete(int $id, Connection $connection): JsonResponse
     {
         try {
             $burger = $connection->fetchAssociative("
@@ -217,9 +236,6 @@ class BurgerController extends AbstractController
             return $this->json(['error' => 'Erreur lors de la suppression'], 500);
         }
     }
-
-
-   
 
     private function getDescriptionBurger(string $nom): string
     {

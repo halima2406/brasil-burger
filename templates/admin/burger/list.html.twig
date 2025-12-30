@@ -10,11 +10,22 @@
 
 {% block body %}
     <div class="filters-bar">
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" placeholder="Rechercher un burger..." class="form-control">
-        </div>
-        <button class="btn btn-primary">Rechercher</button>
+        <form method="GET" action="{{ path('app_burger_list') }}" class="search-form">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" 
+                       name="search" 
+                       value="{{ search|default('') }}" 
+                       placeholder="Rechercher un burger..." 
+                       class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Rechercher</button>
+            {% if search %}
+                <a href="{{ path('app_burger_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Effacer
+                </a>
+            {% endif %}
+        </form>
     </div>
 
     <div class="table-card">
@@ -34,6 +45,9 @@
                             <div style="color: #666;">
                                 <i class="fas fa-hamburger fa-3x"></i>
                                 <h4>Aucun burger trouvé</h4>
+                                {% if search %}
+                                    <p>Aucun résultat pour "{{ search }}"</p>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -77,297 +91,50 @@
         </table>
     </div>
 
-    <!-- Modal élégant -->
+    {% if pagination.total_pages > 1 %}
+    <div class="pagination-container">
+        <div class="pagination">
+            {% if pagination.has_previous %}
+                <a href="?page={{ pagination.previous_page }}{% if search %}&search={{ search }}{% endif %}" 
+                   class="pagination-btn" title="Page précédente">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% endif %}
+            
+            {% for pageNum in pagination.pages %}
+                {% if pageNum == pagination.current_page %}
+                    <span class="pagination-btn active">{{ pageNum }}</span>
+                {% else %}
+                    <a href="?page={{ pageNum }}{% if search %}&search={{ search }}{% endif %}" 
+                       class="pagination-btn">{{ pageNum }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+                <a href="?page={{ pagination.next_page }}{% if search %}&search={{ search }}{% endif %}" 
+                   class="pagination-btn" title="Page suivante">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            {% endif %}
+        </div>
+        <p class="pagination-info">
+            Page {{ pagination.current_page }} sur {{ pagination.total_pages }} 
+            ({{ pagination.total_items }} éléments)
+            {% if search %}- Recherche: "{{ search }}"{% endif %}
+        </p>
+    </div>
+    {% endif %}
+
     <div id="modalOverlay" class="modal-overlay">
         <div class="modal-container">
-            <div id="modalContent" class="modal-content">
-                <!-- Contenu injecté par JavaScript -->
-            </div>
+            <div id="modalContent" class="modal-content"></div>
         </div>
     </div>
-
-    <style>
-        /* Styles pour le modal élégant */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal-container {
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-            margin: 20px;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
-            overflow: hidden;
-            animation: modalSlideIn 0.3s ease;
-        }
-
-        @keyframes modalSlideIn {
-            from { 
-                transform: translateY(-30px);
-                opacity: 0;
-            }
-            to { 
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .modal-header {
-            padding: 20px 25px;
-            background: var(--primary);
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header.danger {
-            background: var(--danger);
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.3s;
-        }
-
-        .close-btn:hover {
-            background: rgba(255,255,255,0.2);
-        }
-
-        .modal-body {
-            padding: 25px;
-        }
-
-        .burger-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-
-        .stat-icon {
-            width: 45px;
-            height: 45px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: white;
-        }
-
-        .stat-icon.price { background: linear-gradient(135deg, #2196f3, #1976d2); }
-        .stat-icon.sales { background: linear-gradient(135deg, #4caf50, #2e7d32); }
-        .stat-icon.today { background: linear-gradient(135deg, #ff9800, #f57c00); }
-        .stat-icon.revenue { background: linear-gradient(135deg, #9c27b0, #7b1fa2); }
-
-        .stat-info h4 {
-            margin: 0 0 2px 0;
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--dark);
-        }
-
-        .stat-info p {
-            margin: 0;
-            font-size: 12px;
-            color: var(--gray);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
-            box-sizing: border-box;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 25px;
-        }
-
-        .btn-cancel, .btn-save, .btn-delete {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-cancel {
-            background: #f5f5f5;
-            color: var(--gray);
-        }
-
-        .btn-save {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-delete {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn-cancel:hover { background: #e0e0e0; }
-        .btn-save:hover { background: var(--primary-dark); }
-        .btn-delete:hover { background: #d32f2f; }
-
-        .warning-content {
-            text-align: center;
-            padding: 20px 0;
-        }
-
-        .warning-content i {
-            color: var(--danger);
-            margin-bottom: 15px;
-        }
-
-        .warning-content h4 {
-            margin: 0 0 10px 0;
-            color: var(--dark);
-        }
-
-        .warning-content p {
-            margin: 5px 0;
-            color: var(--gray);
-        }
-
-        .warning-text {
-            color: var(--danger) !important;
-            font-weight: 600;
-        }
-
-        .recent-orders h4 {
-            margin: 0 0 15px 0;
-            font-size: 16px;
-            color: var(--dark);
-        }
-
-        .orders-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .order-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .order-item:last-child {
-            border-bottom: none;
-        }
-
-        .order-date { font-size: 12px; color: var(--gray); }
-        .order-quantity { font-weight: 600; color: var(--primary); }
-        .order-total { font-weight: 600; color: var(--dark); }
-
-        .no-orders {
-            text-align: center;
-            padding: 40px 0;
-            color: var(--gray);
-        }
-
-        .no-orders i {
-            margin-bottom: 10px;
-            opacity: 0.3;
-        }
-
-        /* Notifications */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            z-index: 1001;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-        }
-
-        .notification.show { transform: translateX(0); }
-        .notification.success { background: #4caf50; }
-        .notification.error { background: #f44336; }
-    </style>
 {% endblock %}
 
 {% block javascripts %}
     {{ parent() }}
     <script>
-        // Voir détails burger avec modal élégant
         async function voirDetailsBurger(burgerId) {
             try {
                 const response = await fetch(`/admin/burger/details/${burgerId}`);
@@ -446,7 +213,6 @@
             }
         }
 
-        // Éditer burger avec modal
         async function editerBurger(burgerId, nomActuel, prixActuel) {
             const modalContent = `
                 <div class="modal-header">
@@ -475,7 +241,6 @@
             document.getElementById('modalOverlay').classList.add('active');
         }
 
-        // Sauvegarder modifications
         async function sauvegarderBurger(event, burgerId) {
             event.preventDefault();
             
@@ -507,7 +272,6 @@
             }
         }
 
-        // Supprimer burger avec confirmation élégante
         async function supprimerBurger(burgerId, nomBurger) {
             const modalContent = `
                 <div class="modal-header danger">
@@ -532,7 +296,6 @@
             document.getElementById('modalOverlay').classList.add('active');
         }
 
-        // Confirmer suppression
         async function confirmerSuppression(burgerId) {
             try {
                 const response = await fetch(`/admin/burger/delete/${burgerId}`, {
@@ -554,12 +317,10 @@
             }
         }
 
-       
         function fermerModal() {
             document.getElementById('modalOverlay').classList.remove('active');
         }
 
-        // Notifications toast
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
@@ -574,7 +335,6 @@
             }, 3000);
         }
 
-        // Fermer modal en cliquant sur l'overlay
         document.addEventListener('click', function(e) {
             if (e.target.id === 'modalOverlay') {
                 fermerModal();
