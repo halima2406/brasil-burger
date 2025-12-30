@@ -35,12 +35,23 @@ class DashboardController extends AbstractController
         $commandesJour = $connection->fetchOne("SELECT COUNT(*) FROM commande WHERE DATE(date_commande) = ?", [$date]) ?: 0;
         $recettesJour = $connection->fetchOne("SELECT COALESCE(SUM(montant_total), 0) FROM commande WHERE DATE(date_commande) = ?", [$date]) ?: 0;
         
+       
+        $commandesEnCours = $connection->fetchOne("
+            SELECT COUNT(*) FROM commande 
+            WHERE DATE(date_commande) = ? AND statut IN ('VALIDEE', 'EN_COURS', 'PRETE')
+        ", [$date]) ?: 0;
+        
+        $commandesAnnulees = $connection->fetchOne("
+            SELECT COUNT(*) FROM commande 
+            WHERE DATE(date_commande) = ? AND statut = 'ANNULEE'
+        ", [$date]) ?: 0;
+        
         return [
             'commandes_jour' => $commandesJour,
             'recettes_jour' => $recettesJour,
             'recettes_jour_formate' => number_format($recettesJour, 0, ',', ' '),
-            'commandes_en_cours' => 0,
-            'commandes_annulees' => 0
+            'commandes_en_cours' => $commandesEnCours,
+            'commandes_annulees' => $commandesAnnulees
         ];
     }
 
@@ -65,18 +76,45 @@ class DashboardController extends AbstractController
 
     private function getTopBurgers(Connection $connection, string $date): array
     {
-        return [];
+        try {
+            $topBurgers = $connection->fetchAllAssociative("
+                SELECT 
+                    p.nom as produit,
+                    p.prix,
+                    SUM(lc.quantite) as ventes_jour,
+                    SUM(lc.montant_total) as chiffre_affaires
+                FROM ligne_commande lc
+                JOIN commande c ON lc.commande_id = c.id
+                JOIN produit p ON lc.produit_id = p.id
+                WHERE DATE(c.date_commande) = ?
+                AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+                AND p.type_produit = 'BURGER'
+                GROUP BY p.id, p.nom, p.prix
+                ORDER BY ventes_jour DESC, chiffre_affaires DESC
+                LIMIT 5
+            ", [$date]);
+
+            foreach ($topBurgers as &$burger) {
+                $burger['prix_formate'] = number_format($burger['prix'], 0, ',', ' ');
+                $burger['chiffre_affaires_formate'] = number_format($burger['chiffre_affaires'], 0, ',', ' ');
+            }
+
+            return $topBurgers;
+
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     private function getStatusBadge(?string $statut): array
     {
         return match($statut) {
-            'VALIDEE' => ['text' => 'Validée', 'class' => 'validee'],
-            'EN_COURS' => ['text' => 'En cours', 'class' => 'en-cours'],
-            'PRETE' => ['text' => 'Prête', 'class' => 'prete'],
-            'LIVREE', 'TERMINEE' => ['text' => 'Terminée', 'class' => 'terminee'],
-            'ANNULEE' => ['text' => 'Annulée', 'class' => 'annulee'],
-            default => ['text' => 'En attente', 'class' => 'en-attente']
+            'VALIDEE' => ['text' => 'Validée', 'class' => 'pending'],
+            'EN_COURS' => ['text' => 'En cours', 'class' => 'preparing'],
+            'PRETE' => ['text' => 'Prête', 'class' => 'delivering'],
+            'LIVREE', 'TERMINEE' => ['text' => 'Terminée', 'class' => 'completed'],
+            'ANNULEE' => ['text' => 'Annulée', 'class' => 'cancelled'],
+            default => ['text' => 'En attente', 'class' => 'pending']
         };
     }
 }
