@@ -23,7 +23,7 @@ class ComplementController extends AbstractController
             
             $whereCondition = $this->getWhereConditionForFilter($filter);
             
-            // Compter le total pour la pagination
+            
             $totalItems = $connection->fetchOne("
                 SELECT COUNT(*) FROM produit p
                 WHERE $whereCondition
@@ -266,26 +266,68 @@ class ComplementController extends AbstractController
     {
         switch ($type) {
             case 'BOISSON':
-                return 'Boisson rafraîchissante';
+                return 'Boisson rafraîchissante pour accompagner votre repas';
             case 'FRITE':
-                return 'Frites croustillantes';
+                if (stripos($nom, 'épicée') !== false || stripos($nom, 'epicee') !== false) {
+                    return 'Frites relevées aux épices du chef';
+                } elseif (stripos($nom, 'bacon') !== false && stripos($nom, 'cheese') !== false) {
+                    return 'Frites garnies de bacon et fromage fondu';
+                } else {
+                    return 'Délicieuses frites dorées et croustillantes';
+                }
+            case 'COMPLEMENT':
+                if (stripos($nom, 'salade') !== false) {
+                    return 'Salade fraîche et équilibrée';
+                } elseif (stripos($nom, 'nugget') !== false) {
+                    return 'Nuggets de poulet dorés et croustillants';
+                } else {
+                    return 'Accompagnement savoureux pour vos burgers';
+                }
             default:
-                return 'Accompagnement savoureux';
+                return 'Accompagnement savoureux pour vos burgers';
         }
     }
 
     public function getImageUrl(string $nom, string $type): string
     {
-       
-        $seed = crc32(strtolower($nom));
-        
         switch ($type) {
             case 'BOISSON':
-                return "https://picsum.photos/seed/{$seed}/100/100"; 
+                if (stripos($nom, 'coca') !== false) {
+                    return 'https://images.unsplash.com/photo-1546171753-97d7676e4602?w=100&h=100&fit=crop&q=80';
+                } elseif (stripos($nom, 'fanta') !== false) {
+                    return 'https://images.unsplash.com/photo-1624552185007-020e4203ac8d?w=100&h=100&fit=crop&q=80';
+                } elseif (stripos($nom, 'sprite') !== false) {
+                    return 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=100&h=100&fit=crop&q=80';
+                } elseif (stripos($nom, 'jus') !== false || stripos($nom, 'orange') !== false) {
+                    return 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=100&h=100&fit=crop&q=80';
+                } elseif (stripos($nom, 'eau') !== false) {
+                    return 'https://images.unsplash.com/photo-1523362628745-0c100150b504?w=100&h=100&fit=crop&q=80';
+                } elseif (stripos($nom, 'café') !== false || stripos($nom, 'cafe') !== false) {
+                    return 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=100&h=100&fit=crop&q=80';
+                } else {
+                    return 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=100&h=100&fit=crop&q=80';
+                }
+                
             case 'FRITE':
-                return "https://picsum.photos/seed/{$seed}/100/100";
+                if (stripos($nom, 'bacon') !== false && stripos($nom, 'cheese') !== false) {
+                    return 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop&q=80';
+                } elseif (stripos($nom, 'épicée') !== false || stripos($nom, 'epicee') !== false) {
+                    return 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=100&h=100&fit=crop&q=80';
+                } else {
+                    return 'https://images.unsplash.com/photo-1576107232684-1279f390859f?w=100&h=100&fit=crop&q=80';
+                }
+                
+            case 'COMPLEMENT':
+                if (stripos($nom, 'salade') !== false) {
+                    return 'https://images.unsplash.com/photo-1546793665-c74683f339c1?w=100&h=100&fit=crop&q=80';
+                } elseif (stripos($nom, 'nugget') !== false) {
+                    return 'https://images.unsplash.com/photo-1562967914-608f82629710?w=100&h=100&fit=crop&q=80';
+                } else {
+                    return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=100&h=100&fit=crop&q=80';
+                }
+                
             default:
-                return "https://picsum.photos/seed/{$seed}/100/100";
+                return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=100&h=100&fit=crop&q=80';
         }
     }
 }
