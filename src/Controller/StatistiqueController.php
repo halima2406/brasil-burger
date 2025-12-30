@@ -14,9 +14,10 @@ class StatistiqueController extends AbstractController
     {
         try {
             $statsJour = $this->getStatistiquesJournalieres($connection);
+            $topVentes = $this->getTopBurgersMenusJour($connection);
             
             $data = [
-                'topVentes' => [],
+                'topVentes' => $topVentes,
                 'recettesJouralieres' => ['burgers' => 0, 'menus' => 0, 'frites' => 0, 'boissons' => 0, 'total' => 0],
                 'commandesValidees' => [],
                 'commandesAnnulees' => [],
@@ -60,5 +61,53 @@ class StatistiqueController extends AbstractController
             'commandes_annulees' => (int) $commandesAnnulees,
             'recettes_jour' => (float) $recettesJour
         ];
+    }
+
+    private function getTopBurgersMenusJour(Connection $connection): array
+    {
+        $aujourdhui = date('Y-m-d');
+        
+        $results = $connection->fetchAllAssociative("
+            SELECT 
+                p.nom as produit,
+                COUNT(*) as ventes_journee,
+                SUM(lc.prix_unitaire * lc.quantite) as chiffre_affaires_jour
+            FROM ligne_commande lc
+            JOIN produit p ON lc.produit_id = p.id  
+            JOIN commande c ON lc.commande_id = c.id
+            WHERE DATE(c.date_commande) = ?
+                AND c.statut IN ('VALIDEE', 'EN_COURS', 'TERMINEE')
+                AND p.type_produit IN ('BURGER', 'MENU')
+            GROUP BY p.id, p.nom
+            ORDER BY ventes_journee DESC
+            LIMIT 5
+        ", [$aujourdhui]);
+        
+        $topVentes = [];
+        $rang = 1;
+        
+        foreach ($results as $result) {
+            $topVentes[] = [
+                'rang' => $rang,
+                'classe_rang' => $this->getClasseRang($rang),
+                'nom' => $result['produit'],
+                'total_vendu' => (int) $result['ventes_journee'],
+                'chiffre_affaires' => (int) $result['chiffre_affaires_jour'],
+                'image_url' => 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=100'
+            ];
+            $rang++;
+        }
+        
+        return $topVentes;
+    }
+
+    private function getClasseRang(int $rang): string
+    {
+        return match($rang) {
+            1 => 'gold',
+            2 => 'silver', 
+            3 => 'bronze',
+            default => ''
+        };
     }
 }
