@@ -1,0 +1,280 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Suivi Livraisons - Brasil Burger{% endblock %}
+{% block page_title %}Suivi Complet des Livraisons{% endblock %}
+{% block page_subtitle %}Tableau de bord en temps réel{% endblock %}
+
+{% block body %}
+<div class="suivi-container">
+    <!-- Header Stats -->
+    <div class="suivi-header">
+        <div class="stat-box">
+            <div class="stat-number">{{ totalLivraisons }}</div>
+            <div class="stat-label">Livraisons actives</div>
+        </div>
+        <div class="controls">
+            <div class="zone-filter">
+                <select id="zoneFilter" onchange="filterByZone(this.value)">
+                    <option value="all">Toutes les zones</option>
+                    {% for zone in zones %}
+                        <option value="{{ zone.id }}">{{ zone.quartier }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button class="refresh-btn" onclick="refreshSuivi()">
+                <i class="fas fa-sync"></i> Actualiser
+            </button>
+        </div>
+    </div>
+
+    <!-- Livraisons Grid -->
+    <div class="livraisons-grid">
+        {% for livraison in livraisonsEnCours %}
+        <div class="livraison-card" data-zone="{{ livraison.zone_id }}" data-commande="{{ livraison.id }}">
+            <!-- Card Header -->
+            <div class="card-header">
+                <div class="commande-info">
+                    <h3>#CMD{{ livraison.numero_commande }}</h3>
+                    <span class="temps-ecoule">{{ livraison.temps_ecoule }}</span>
+                </div>
+                <span class="statut-badge {{ livraison.statut_badge.class }}">
+                    {{ livraison.statut_badge.text }}
+                </span>
+            </div>
+
+            <!-- Livreur Info -->
+            <div class="livreur-section">
+                <div class="livreur-avatar">{{ livraison.livreur_nom|slice(0, 2)|upper }}</div>
+                <div class="livreur-details">
+                    <strong>{{ livraison.livreur_nom }}</strong>
+                    <p>{{ livraison.livreur_tel }}</p>
+                </div>
+                <button class="contact-btn" >
+                    <i class="fas fa-phone"></i>
+                </button>
+            </div>
+
+            <!-- Client & Location -->
+            <div class="client-section">
+                <h4>{{ livraison.client_nom }}</h4>
+                <p class="adresse">
+                    <i class="fas fa-map-marker-alt"></i>
+                    {{ livraison.adresse_livraison }}
+                </p>
+                <p class="zone">{{ livraison.quartier }}</p>
+            </div>
+
+            <!-- Order Details -->
+            <div class="order-details">
+                <div class="price-info">
+                    <span class="total">{{ livraison.total_formate }}</span>
+                    <span class="livraison-fee">+ {{ livraison.prix_livraison_formate }}</span>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card-actions">
+                <button class="btn-action details" onclick="voirDetails({{ livraison.id }})">
+                    <i class="fas fa-eye"></i> Détails
+                </button>
+                <button class="btn-action track" >
+                    <i class="fas fa-route"></i> Localiser
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if livraisonsEnCours is empty %}
+    <div class="empty-state">
+        <i class="fas fa-motorcycle fa-3x"></i>
+        <h3>Aucune livraison en cours</h3>
+        <p>Toutes les livraisons sont terminées ou en attente d'assignation.</p>
+        <a href="{{ path('app_livraison_list') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Assigner des commandes
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal de localisation -->
+<div id="modalTrack" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="trackTitle">Localisation Livreur</h3>
+            <button class="modal-close" onclick="fermerModalTrack()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="map-placeholder">
+                <i class="fas fa-map-marked-alt fa-3x"></i>
+                <h4>Carte GPS</h4>
+                <p>Fonctionnalité de géolocalisation disponible prochainement</p>
+                <div class="mock-position">
+                    <strong>Position estimée :</strong><br>
+                    Dakar, Sénégal<br>
+                    <small class="text-muted">Dernière mise à jour: il y a 2 minutes</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Détails -->
+<div id="modalDetails" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modalTitle">Détails de la commande</h3>
+            <button class="modal-close" onclick="fermerModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalContent">
+            <div class="loading">Chargement...</div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+function filterByZone(zoneId) {
+    const cards = document.querySelectorAll('.livraison-card');
+    cards.forEach(card => {
+        if (zoneId === 'all' || card.dataset.zone === zoneId) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function refreshSuivi() {
+    location.reload();
+}
+
+function contactLivreur(telephone) {
+    if (confirm(`Appeler le livreur au ${telephone} ?`)) {
+        window.location.href = `tel:${telephone}`;
+    }
+}
+
+async function voirDetails(commandeId) {
+    try {
+        const modal = document.getElementById('modalDetails');
+        const content = document.getElementById('modalContent');
+        const title = document.getElementById('modalTitle');
+        
+        content.innerHTML = '<div class="loading">Chargement des détails...</div>';
+        modal.classList.add('active');
+        
+        const response = await fetch(`{{ path('app_livraison_details', {commandeId: 'PLACEHOLDER'}) }}`.replace('PLACEHOLDER', commandeId));
+        const data = await response.json();
+        
+        if (data.success) {
+            title.textContent = `Détails CMD${data.commande.numero_commande}`;
+            content.innerHTML = `
+                <div class="commande-details">
+                    <div class="detail-section">
+                        <h4>Informations client</h4>
+                        <p><strong>Client:</strong> ${data.commande.client_nom}</p>
+                        <p><strong>Téléphone:</strong> ${data.commande.telephone_client}</p>
+                        <p><strong>Adresse:</strong> ${data.commande.adresse_livraison}</p>
+                        <p><strong>Zone:</strong> ${data.commande.quartier}</p>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>Produits commandés</h4>
+                        ${data.produits.map(p => `
+                            <div class="produit-detail">
+                                <span>${p.nom} x${p.quantite}</span>
+                                <span>${p.sous_total_formate}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>Total</h4>
+                        <p><strong>Commande:</strong> ${data.commande.total_formate}</p>
+                        <p><strong>Livraison:</strong> ${data.commande.prix_livraison_formate}</p>
+                        <p><strong>Total final:</strong> ${data.commande.total_final}</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            content.innerHTML = `<div class="error">Erreur: ${data.error}</div>`;
+        }
+        
+    } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('modalContent').innerHTML = `<div class="error">Erreur de chargement</div>`;
+    }
+}
+
+function fermerModal() {
+    document.getElementById('modalDetails').classList.remove('active');
+}
+
+function trackLivraison(commandeId) {
+    document.getElementById('trackTitle').textContent = `Localisation CMD${commandeId}`;
+    document.getElementById('modalTrack').classList.add('active');
+}
+
+function fermerModalTrack() {
+    document.getElementById('modalTrack').classList.remove('active');
+}
+
+// Auto-refresh every 30 seconds
+setInterval(refreshSuivi, 30000);
+</script>
+
+<style>
+.suivi-container { padding: 20px; }
+.suivi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+.stat-box { text-align: center; }
+.stat-number { font-size: 32px; font-weight: 700; color: #2e7d32; }
+.stat-label { color: #666; font-size: 14px; }
+.controls { display: flex; gap: 15px; align-items: center; }
+.zone-filter select { padding: 10px 15px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; }
+.refresh-btn { background: #2e7d32; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+.refresh-btn:hover { background: #1b5e20; }
+.livraisons-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+.livraison-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: all 0.3s; }
+.livraison-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.commande-info h3 { margin: 0; color: #2e7d32; font-size: 18px; }
+.temps-ecoule { color: #666; font-size: 14px; }
+.statut-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.statut-badge.success { background: #e8f5e9; color: #2e7d32; }
+.statut-badge.warning { background: #fff3cd; color: #856404; }
+.statut-badge.info { background: #cce7ff; color: #0c5aa6; }
+.livreur-section { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
+.livreur-avatar { width: 50px; height: 50px; background: #2e7d32; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; }
+.livreur-details { flex: 1; }
+.livreur-details strong { color: #333; }
+.livreur-details p { margin: 2px 0; color: #666; font-size: 14px; }
+.contact-btn { background: #2e7d32; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+.contact-btn:hover { background: #1b5e20; transform: scale(1.1); }
+.client-section h4 { margin: 0 0 8px 0; color: #333; }
+.client-section .adresse { color: #666; margin: 5px 0; }
+.client-section .zone { color: #2e7d32; font-weight: 600; font-size: 14px; }
+.order-details { margin: 15px 0; }
+.price-info .total { font-size: 18px; font-weight: 700; color: #2e7d32; }
+.price-info .livraison-fee { color: #666; font-size: 14px; margin-left: 10px; }
+.card-actions { display: flex; gap: 10px; margin-top: 15px; }
+.btn-action { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+.btn-action.details { background: #e3f2fd; color: #1976d2; }
+.btn-action.details:hover { background: #bbdefb; }
+.btn-action.track { background: #e8f5e9; color: #2e7d32; }
+.btn-action.track:hover { background: #c8e6c9; }
+.empty-state { text-align: center; padding: 60px 20px; color: #666; }
+.btn { padding: 12px 24px; background: #2e7d32; color: white; border: none; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+.modal-overlay.active { display: flex; }
+.modal { background: white; border-radius: 15px; width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 50px rgba(0,0,0,0.3); }
+.modal-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #666; }
+.modal-body { padding: 20px; }
+.map-placeholder { text-align: center; padding: 40px; background: #f8f9fa; border-radius: 10px; color: #666; }
+.mock-position { margin-top: 20px; padding: 15px; background: white; border-radius: 8px; text-align: left; }
+</style>
+{% endblock %}
