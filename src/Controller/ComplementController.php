@@ -137,6 +137,38 @@ class ComplementController extends AbstractController
         }
     }
 
+    #[Route('/delete/{id}', name: 'app_complement_delete', methods: ['POST'])]
+    public function delete(int $id, Connection $connection): JsonResponse
+    {
+        try {
+            $complement = $connection->fetchAssociative("
+                SELECT id, nom FROM produit WHERE id = ?
+            ", [$id]);
+
+            if (!$complement) {
+                return $this->json(['error' => 'Complément non trouvé'], 404);
+            }
+
+            $commandesLiees = $connection->fetchOne("
+                SELECT COUNT(*) FROM ligne_commande WHERE produit_id = ?
+            ", [$id]);
+
+            if ($commandesLiees > 0) {
+                return $this->json(['error' => 'Impossible de supprimer : complément lié à des commandes'], 400);
+            }
+
+            $connection->executeStatement("DELETE FROM produit WHERE id = ?", [$id]);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Complément supprimé avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     private function getWhereConditionForFilter(string $filter): string
     {
         switch ($filter) {
