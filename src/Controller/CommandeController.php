@@ -12,7 +12,7 @@ use Doctrine\DBAL\Connection;
 #[Route('/admin/commande')]
 class CommandeController extends AbstractController
 {
-    #[Route('/list', name: 'app_commande_list')]
+    /*#[Route('/list', name: 'app_commande_list')]
     public function list(Request $request, Connection $connection): Response
     {
         try {
@@ -48,6 +48,67 @@ class CommandeController extends AbstractController
                 'statusFilter' => $statusFilter,
                 'search' => $search,
                 'totalCommandes' => count($commandesFiltrees)
+            ]);
+
+        } catch (\Exception $e) {
+            return new Response("Erreur CommandeController: " . $e->getMessage());
+        }
+    }*/
+
+    #[Route('/list', name: 'app_commande_list')]
+    public function list(Request $request, Connection $connection): Response
+    {
+        try {
+            $statusFilter = $request->query->get('status', 'all');
+            $search = trim($request->query->get('search', ''));
+            $page = max(1, (int) $request->query->get('page', 1));
+            $perPage = 4;
+            $offset = ($page - 1) * $perPage;
+            
+            $toutesLesCommandes = $connection->fetchAllAssociative("
+                SELECT c.id, c.client_id, c.montant_total, c.statut, 
+                    c.date_commande, c.type_consommation
+                FROM commande c 
+                ORDER BY c.date_commande DESC
+            ");
+
+            foreach ($toutesLesCommandes as &$commande) {
+                $commande['numero'] = '#CMD-' . str_pad($commande['id'], 6, '0', STR_PAD_LEFT);
+                $commande['client_nom'] = 'Client ' . $commande['client_id'];
+                $commande['telephone'] = '77 ' . str_pad($commande['client_id'] * 123, 7, '0', STR_PAD_LEFT);
+                $commande['prix_formate'] = number_format($commande['montant_total'], 0, ',', ' ');
+                $commande['heure'] = date('H:i', strtotime($commande['date_commande']));
+                $commande['client_initiales'] = $this->getClientInitiales($commande['client_nom']);
+                $commande['mode_badge'] = $this->getModeBadge($commande['type_consommation']);
+                $commande['status_badge'] = $this->getStatusBadge($commande['statut']);
+                $commande['articles_count'] = rand(1, 5) . ' articles';
+            }
+
+            $stats = $this->calculerStatistiquesReelles($toutesLesCommandes);
+            $commandesFiltrees = $this->filtrerCommandes($toutesLesCommandes, $statusFilter, $search);
+            
+            
+            $totalItems = count($commandesFiltrees);
+            $totalPages = ceil($totalItems / $perPage);
+            $commandes = array_slice($commandesFiltrees, $offset, $perPage);
+
+            return $this->render('admin/commande/list.html.twig', [
+                'commandes' => $commandes,
+                'stats' => $stats,
+                'statusFilter' => $statusFilter,
+                'search' => $search,
+                'totalCommandes' => $totalItems,
+                'pagination' => [
+                    'current_page' => $page,
+                    'total_pages' => $totalPages,
+                    'total_items' => $totalItems,
+                    'per_page' => $perPage,
+                    'has_previous' => $page > 1,
+                    'has_next' => $page < $totalPages,
+                    'previous_page' => $page > 1 ? $page - 1 : null,
+                    'next_page' => $page < $totalPages ? $page + 1 : null,
+                    'pages' => range(1, $totalPages)
+                ]
             ]);
 
         } catch (\Exception $e) {
