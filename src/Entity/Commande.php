@@ -32,6 +32,8 @@ class Commande
     #[ORM\Column(name: 'statut', type: 'string', nullable: true)]
     private ?string $statut = null;
 
+   
+
   
     private ?Client $client = null;
     private ?Livreur $livreur = null;
@@ -85,5 +87,22 @@ class Commande
     public function __toString(): string
     {
         return 'Commande #' . $this->id;
+    }
+
+   
+    #[ORM\ManyToOne(targetEntity: Gestionnaire::class, inversedBy: 'commandes')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Gestionnaire $gestionnaire = null;
+
+   
+    public function getGestionnaire(): ?Gestionnaire
+    {
+        return $this->gestionnaire;
+    }
+
+    public function setGestionnaire(?Gestionnaire $gestionnaire): static
+    {
+        $this->gestionnaire = $gestionnaire;
+        return $this;
     }
 }
