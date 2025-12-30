@@ -3,14 +3,13 @@
 namespace App\Form;
 
 use App\DTO\CommandeSearchFormDto;
-use App\Entity\Client;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 
 class CommandeSearchType extends AbstractType
 {
@@ -22,51 +21,45 @@ class CommandeSearchType extends AbstractType
                 'required' => false,
                 'attr' => [
                     'placeholder' => 'Rechercher par numéro...',
-                    'class' => 'filter-input',
-                    'autocomplete' => 'off',
+                    'class' => 'filter-input'
                 ],
             ])
 
-            ->add('client', EntityType::class, [
-                'class' => Client::class,
-                'choice_label' => function(Client $client) {
-                    return $client->getNomComplet() ?: $client->getEmail();
-                },
+            ->add('clientId', IntegerType::class, [
+                'label' => 'ID Client',
                 'required' => false,
-                'placeholder' => 'Rechercher par client',
-                'attr' => ['class' => 'filter-input'],
+                'attr' => [
+                    'placeholder' => 'ID du client...',
+                    'class' => 'filter-input'
+                ],
             ])
 
             ->add('statut', ChoiceType::class, [
                 'label' => 'Statut',
                 'required' => false,
-                'placeholder' => '-- Statut --',
+                'placeholder' => '-- Tous les statuts --',
                 'choices' => [
-                    'En attente' => 'pending',
-                    'En préparation' => 'preparing', 
-                    'En livraison' => 'delivering',
-                    'Terminées' => 'completed',
-                    'Annulées' => 'cancelled',
+                    'En attente' => 'VALIDEE',
+                    'En préparation' => 'EN_COURS', 
+                    'Prête' => 'PRETE',
+                    'En livraison' => 'EN_LIVRAISON',
+                    'Livrée' => 'LIVREE',
+                    'Terminée' => 'TERMINEE',
+                    'Annulée' => 'ANNULEE',
                 ],
-                'expanded' => false,
-                'multiple' => false,
                 'attr' => ['class' => 'filter-input'],
-                'choice_translation_domain' => false,
             ])
 
             ->add('typeConsommation', ChoiceType::class, [
                 'label' => 'Mode consommation',
                 'required' => false,
-                'placeholder' => '-- Mode de consommation --',
+                'placeholder' => '-- Tous les modes --',
                 'choices' => [
-                    'Sur place' => 'surplace',
-                    'À emporter' => 'emporter',
-                    'Livraison' => 'livraison',
+                    'Sur place' => 'SUR_PLACE',
+                    'À emporter' => 'A_EMPORTER',
+                    'Livraison' => 'LIVRAISON',
                 ],
-                'expanded' => false,
-                'multiple' => false,
                 'attr' => ['class' => 'filter-input'],
-                'choice_translation_domain' => false,
             ])
 
             ->add('dateDebut', DateType::class, [
@@ -98,7 +91,7 @@ class CommandeSearchType extends AbstractType
             'method' => 'GET',
             'csrf_protection' => false,
             'attr' => [
-                'data-turbo' => false,
+                'class' => 'search-form-filters'
             ],
         ]);
     }
