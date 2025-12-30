@@ -120,8 +120,8 @@
     <div class="pagination-container">
         <div class="pagination">
             {% if pagination.has_previous %}
-                <a href="?page={{ pagination.previous_page }}&filter={{ filter }}" class="pagination-btn">
-                    <i class="fas fa-chevron-left"></i> Précédent
+                <a href="?page={{ pagination.previous_page }}&filter={{ filter }}" class="pagination-btn" title="Page précédente">
+                    <i class="fas fa-chevron-left"></i>
                 </a>
             {% endif %}
             
@@ -134,8 +134,8 @@
             {% endfor %}
             
             {% if pagination.has_next %}
-                <a href="?page={{ pagination.next_page }}&filter={{ filter }}" class="pagination-btn">
-                    Suivant <i class="fas fa-chevron-right"></i>
+                <a href="?page={{ pagination.next_page }}&filter={{ filter }}" class="pagination-btn" title="Page suivante">
+                    <i class="fas fa-chevron-right"></i>
                 </a>
             {% endif %}
         </div>
@@ -153,70 +153,7 @@
     </div>
 </div>
 
-<style>
-/* STYLES PAGINATION AJOUTÉS */
-.pagination-container {
-    margin-top: 30px;
-    text-align: center;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 10px;
-}
 
-.pagination {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-}
-
-.pagination-btn {
-    padding: 10px 15px;
-    background: #fff;
-    border: 2px solid #e1e4e8;
-    color: #333;
-    text-decoration: none;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.pagination-btn:hover {
-    background: #f1f3f4;
-    color: #007bff;
-    border-color: #007bff;
-    transform: translateY(-1px);
-}
-
-.pagination-btn.active {
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: white;
-    border-color: #007bff;
-    box-shadow: 0 2px 8px rgba(0,123,255,0.3);
-}
-
-.pagination-info {
-    font-size: 14px;
-    color: #666;
-    margin: 0;
-    font-weight: 500;
-}
-
-@media (max-width: 768px) {
-    .pagination {
-        gap: 4px;
-    }
-    
-    .pagination-btn {
-        padding: 8px 12px;
-        font-size: 14px;
-    }
-}
-</style>
 {% endblock %}
 
 {% block javascripts %}
