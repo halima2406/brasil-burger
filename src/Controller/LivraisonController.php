@@ -179,4 +179,91 @@ class LivraisonController extends AbstractController
             return $this->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    #[Route('/suivi', name: 'app_livraison_suivi')]
+    public function suivi(Request $request, Connection $connection): Response
+    {
+        try {
+            $page = max(1, (int) $request->query->get('page', 1));
+            $statutFilter = $request->query->get('statut', 'all');
+            $livreurFilter = $request->query->get('livreur', 'all');
+            $limit = self::LIMIT;
+            $offset = ($page - 1) * $limit;
+
+            $whereConditions = ["c.livreur_id IS NOT NULL"];
+            
+            if ($statutFilter !== 'all') {
+                $whereConditions[] = "c.statut_livraison = '" . $connection->quote($statutFilter) . "'";
+            }
+            
+            if ($livreurFilter !== 'all') {
+                $whereConditions[] = "c.livreur_id = " . (int)$livreurFilter;
+            }
+
+            $whereClause = "WHERE " . implode(' AND ', $whereConditions);
+
+            $livraisons = $connection->fetchAllAssociative("
+                SELECT 
+                    c.id,
+                    'CMD' || c.id as numero_commande,
+                    c.date_commande,
+                    c.montant_total as total,
+                    'Adresse livraison' as adresse_livraison,
+                    'Téléphone client' as telephone_client,
+                    c.statut,
+                    COALESCE(c.statut_livraison, 'ASSIGNEE') as statut_livraison,
+                    'Client' as client_nom,
+                    l.nom as livreur_nom,
+                    l.telephone as livreur_tel,
+                    z.quartier,
+                    z.prix as prix_livraison
+                FROM commande c
+                LEFT JOIN livreur l ON c.livreur_id = l.id
+                LEFT JOIN zone z ON c.zone_id = z.id
+                $whereClause
+                ORDER BY c.date_commande DESC
+                LIMIT $limit OFFSET $offset
+            ");
+
+            $totalLivraisons = $connection->fetchOne("
+                SELECT COUNT(*) FROM commande c $whereClause
+            ");
+            $totalPages = (int) ceil($totalLivraisons / $limit);
+
+            $livreurs = $connection->fetchAllAssociative("
+                SELECT id, nom 
+                FROM livreur 
+                WHERE est_archive = false 
+                ORDER BY nom ASC
+            ");
+
+            $statuts = [
+                'ASSIGNEE' => 'Assignée',
+                'EN_ROUTE' => 'En route',
+                'LIVREE' => 'Livrée',
+                'PROBLEME' => 'Problème'
+            ];
+
+            foreach ($livraisons as &$livraison) {
+                $livraison['total_formate'] = number_format($livraison['total'], 0, ',', ' ') . ' FCFA';
+                $livraison['prix_livraison_formate'] = number_format($livraison['prix_livraison'] ?? 0, 0, ',', ' ') . ' FCFA';
+                $livraison['date_formate'] = date('d/m/Y H:i', strtotime($livraison['date_commande']));
+            }
+
+            return $this->render('admin/livraison/suivi.html.twig', [
+                'livraisons' => $livraisons,
+                'livreurs' => $livreurs,
+                'statuts' => $statuts,
+                'pageEnCours' => $page,
+                'nbrePage' => $totalPages,
+                'totalLivraisons' => $totalLivraisons,
+                'statutFilter' => $statutFilter,
+                'livreurFilter' => $livreurFilter,
+                'database_ready' => true
+            ]);
+
+        } catch (\Exception $e) {
+            return new Response("Erreur suivi: " . $e->getMessage());
+        }
+    }
 }
