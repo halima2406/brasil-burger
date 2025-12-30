@@ -5,6 +5,7 @@ namespace App\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\DBAL\Connection;
 
@@ -40,6 +41,47 @@ class CommandeController extends AbstractController
 
         } catch (\Exception $e) {
             return new Response("Erreur CommandeController: " . $e->getMessage());
+        }
+    }
+
+    #[Route('/details/{id}', name: 'app_commande_details', methods: ['GET'])]
+    public function details(int $id, Connection $connection): JsonResponse
+    {
+        try {
+            $commande = $connection->fetchAssociative("
+                SELECT c.*, 
+                       '#CMD-' || LPAD(c.id::text, 6, '0') as numero
+                FROM commande c 
+                WHERE c.id = ?
+            ", [$id]);
+
+            if (!$commande) {
+                return $this->json(['error' => 'Commande non trouvée'], 404);
+            }
+
+            $produits = $connection->fetchAllAssociative("
+                SELECT lc.*, p.nom as produit_nom, p.type_produit
+                FROM ligne_commande lc
+                JOIN produit p ON lc.produit_id = p.id
+                WHERE lc.commande_id = ?
+                ORDER BY p.nom
+            ", [$id]);
+
+            $commande['client_nom'] = 'Client ' . $commande['client_id'];
+            $commande['prix_formate'] = number_format($commande['montant_total'], 0, ',', ' ');
+
+            foreach ($produits as &$produit) {
+                $produit['prix_formate'] = number_format($produit['prix_unitaire'], 0, ',', ' ');
+                $produit['total_formate'] = number_format($produit['montant_total'], 0, ',', ' ');
+            }
+
+            return $this->json([
+                'commande' => $commande,
+                'produits' => $produits
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
         }
     }
 }
