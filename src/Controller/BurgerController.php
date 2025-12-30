@@ -17,9 +17,6 @@ class BurgerController extends AbstractController
     {
         try {
             $search = $request->query->get('search', '');
-            $page = max(1, (int) $request->query->get('page', 1));
-            $perPage = 5;
-            $offset = ($page - 1) * $perPage;
 
             $whereCondition = "p.type_produit = 'BURGER'";
             $params = [];
@@ -28,10 +25,6 @@ class BurgerController extends AbstractController
                 $whereCondition .= " AND p.nom LIKE ?";
                 $params[] = '%' . $search . '%';
             }
-
-            $totalBurgers = $connection->fetchOne("
-                SELECT COUNT(*) FROM produit p WHERE $whereCondition
-            ", $params) ?: 0;
 
             $burgers = $connection->fetchAllAssociative("
                 SELECT p.id, p.nom, p.prix, p.type_produit,
@@ -43,7 +36,6 @@ class BurgerController extends AbstractController
                 WHERE $whereCondition
                 GROUP BY p.id, p.nom, p.prix, p.type_produit
                 ORDER BY p.nom ASC
-                LIMIT $perPage OFFSET $offset
             ", $params);
 
             foreach ($burgers as &$burger) {
@@ -53,25 +45,10 @@ class BurgerController extends AbstractController
                 $burger['archive'] = false;
                 $burger['description'] = $this->getDescriptionBurger($burger['nom']);
             }
-
-            $totalPages = ceil($totalBurgers / $perPage);
             
             return $this->render('admin/burger/list.html.twig', [
                 'burgers' => $burgers,
-                'search' => $search,
-                'pageEnCours' => $page,
-                'nbrePage' => $totalPages,
-                'pagination' => [
-                    'current_page' => $page,
-                    'total_pages' => $totalPages,
-                    'total_items' => $totalBurgers,
-                    'per_page' => $perPage,
-                    'has_previous' => $page > 1,
-                    'has_next' => $page < $totalPages,
-                    'previous_page' => $page > 1 ? $page - 1 : null,
-                    'next_page' => $page < $totalPages ? $page + 1 : null,
-                    'pages' => range(1, $totalPages)
-                ]
+                'search' => $search
             ]);
 
         } catch (\Exception $e) {
@@ -122,6 +99,7 @@ class BurgerController extends AbstractController
             'burgers' => $burgers
         ], $pagination));
     }*/
+
 
     #[Route('/details/{id}', name: 'app_burger_details', methods: ['GET'])]
     public function details(int $id, Connection $connection): JsonResponse
@@ -251,3 +229,5 @@ class BurgerController extends AbstractController
         return $descriptions[$nom] ?? 'Burger savoureux avec ingrédients frais et sauce maison';
     }
 }
+
+  

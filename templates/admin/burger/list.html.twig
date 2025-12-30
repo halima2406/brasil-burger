@@ -91,40 +91,6 @@
         </table>
     </div>
 
-    {% if pagination.total_pages > 1 %}
-    <div class="pagination-container">
-        <div class="pagination">
-            {% if pagination.has_previous %}
-                <a href="?page={{ pagination.previous_page }}{% if search %}&search={{ search }}{% endif %}" 
-                   class="pagination-btn" title="Page précédente">
-                    <i class="fas fa-chevron-left"></i>
-                </a>
-            {% endif %}
-            
-            {% for pageNum in pagination.pages %}
-                {% if pageNum == pagination.current_page %}
-                    <span class="pagination-btn active">{{ pageNum }}</span>
-                {% else %}
-                    <a href="?page={{ pageNum }}{% if search %}&search={{ search }}{% endif %}" 
-                       class="pagination-btn">{{ pageNum }}</a>
-                {% endif %}
-            {% endfor %}
-            
-            {% if pagination.has_next %}
-                <a href="?page={{ pagination.next_page }}{% if search %}&search={{ search }}{% endif %}" 
-                   class="pagination-btn" title="Page suivante">
-                    <i class="fas fa-chevron-right"></i>
-                </a>
-            {% endif %}
-        </div>
-        <p class="pagination-info">
-            Page {{ pagination.current_page }} sur {{ pagination.total_pages }} 
-            ({{ pagination.total_items }} éléments)
-            {% if search %}- Recherche: "{{ search }}"{% endif %}
-        </p>
-    </div>
-    {% endif %}
-
     <div id="modalOverlay" class="modal-overlay">
         <div class="modal-container">
             <div id="modalContent" class="modal-content"></div>
