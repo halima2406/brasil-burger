@@ -5,6 +5,7 @@ namespace App\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\DBAL\Connection;
 
@@ -15,6 +16,16 @@ class MenuController extends AbstractController
     public function list(Request $request, Connection $connection): Response
     {
         try {
+            $page = max(1, (int) $request->query->get('page', 1));
+            $perPage = 5;
+            $offset = ($page - 1) * $perPage;
+
+        
+            $totalMenus = $connection->fetchOne("
+                SELECT COUNT(*) FROM menu m 
+                WHERE m.est_archive = false OR m.est_archive IS NULL
+            ") ?: 0;
+
             $menus = $connection->fetchAllAssociative("
                 SELECT 
                     m.id,
@@ -26,36 +37,187 @@ class MenuController extends AbstractController
                     bo.prix as boisson_prix,
                     f.nom as frite_nom,
                     f.prix as frite_prix,
-                    COALESCE(b.prix, 0) + COALESCE(bo.prix, 0) + COALESCE(f.prix, 0) as prix_total
+                    COALESCE(b.prix, 0) + COALESCE(bo.prix, 0) + COALESCE(f.prix, 0) as prix_total,
+                    COALESCE(SUM(lc.quantite), 0) as ventes_totales,
+                    COALESCE(SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN lc.quantite ELSE 0 END), 0) as ventes_jour
                 FROM menu m
                 LEFT JOIN produit b ON m.burger_id = b.id
                 LEFT JOIN produit bo ON m.boisson_id = bo.id  
                 LEFT JOIN produit f ON m.frite_id = f.id
+                LEFT JOIN ligne_commande lc ON m.id = lc.produit_id
+                LEFT JOIN commande c ON lc.commande_id = c.id AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
                 WHERE m.est_archive = false OR m.est_archive IS NULL
+                GROUP BY m.id, m.nom, m.est_archive, b.nom, b.prix, bo.nom, bo.prix, f.nom, f.prix
                 ORDER BY m.nom ASC
-                LIMIT 10
+                LIMIT $perPage OFFSET $offset
             ");
 
             foreach ($menus as &$menu) {
                 $menu['prix'] = (float) $menu['prix_total'];
                 $menu['prix_formate'] = number_format($menu['prix'], 0, ',', ' ') . ' FCFA';
                 $menu['disponible'] = !$menu['est_archive'];
-                $menu['description'] = 'Menu complet Brasil Burger';
+                $menu['description'] = $this->getDescriptionMenu($menu['nom']);
+                $menu['ventes_totales'] = (int) $menu['ventes_totales'];
+                $menu['ventes_jour'] = (int) $menu['ventes_jour'];
             }
 
             $stats = $this->getStatsMenus($connection);
 
-            return $this->render('admin/menu/list.html.twig', [
+         
+            $totalPages = ceil($totalMenus / $perPage);
+            $pagination = [
+                'pageEnCours' => $page,
+                'nbrePage' => $totalPages,
+            ];
+
+            return $this->render('admin/menu/list.html.twig', array_merge([
                 'menus' => $menus,
-                'totalMenus' => count($menus),
+                'totalMenus' => $totalMenus,
                 'stats' => $stats
-            ]);
+            ], $pagination));
 
         } catch (\Exception $e) {
             return new Response("Erreur MenuController: " . $e->getMessage());
         }
     }
 
+    #[Route('/details/{id}', name: 'app_menu_details', methods: ['GET'])]
+    public function details(int $id, Connection $connection): JsonResponse
+    {
+        try {
+            $menu = $connection->fetchAssociative("
+                SELECT 
+                    m.id, m.nom, m.est_archive,
+                    b.nom as burger_nom, b.prix as burger_prix,
+                    bo.nom as boisson_nom, bo.prix as boisson_prix,
+                    f.nom as frite_nom, f.prix as frite_prix,
+                    COALESCE(b.prix, 0) + COALESCE(bo.prix, 0) + COALESCE(f.prix, 0) as prix_total,
+                    COALESCE(SUM(lc.quantite), 0) as ventes_totales,
+                    COALESCE(SUM(lc.montant_total), 0) as chiffre_affaires,
+                    COALESCE(SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN lc.quantite ELSE 0 END), 0) as ventes_jour
+                FROM menu m
+                LEFT JOIN produit b ON m.burger_id = b.id
+                LEFT JOIN produit bo ON m.boisson_id = bo.id  
+                LEFT JOIN produit f ON m.frite_id = f.id
+                LEFT JOIN ligne_commande lc ON m.id = lc.produit_id
+                LEFT JOIN commande c ON lc.commande_id = c.id AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+                WHERE m.id = ?
+                GROUP BY m.id, m.nom, m.est_archive, b.nom, b.prix, bo.nom, bo.prix, f.nom, f.prix
+            ", [$id]);
+
+            if (!$menu) {
+                return $this->json(['error' => 'Menu non trouvé'], 404);
+            }
+
+           
+            $commandes = $connection->fetchAllAssociative("
+                SELECT c.date_commande, lc.quantite, lc.montant_total
+                FROM ligne_commande lc
+                JOIN commande c ON lc.commande_id = c.id
+                WHERE lc.produit_id = ? AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+                ORDER BY c.date_commande DESC
+                LIMIT 10
+            ", [$id]);
+
+          
+            $menu['prix_formate'] = number_format($menu['prix_total'], 0, ',', ' ');
+            $menu['chiffre_affaires_formate'] = number_format($menu['chiffre_affaires'], 0, ',', ' ');
+            $menu['ventes_totales'] = (int) $menu['ventes_totales'];
+            $menu['ventes_jour'] = (int) $menu['ventes_jour'];
+
+            foreach ($commandes as &$commande) {
+                $commande['date_formate'] = date('d/m/Y H:i', strtotime($commande['date_commande']));
+                $commande['total_formate'] = number_format($commande['montant_total'], 0, ',', ' ');
+            }
+
+            return $this->json([
+                'success' => true,
+                'menu' => $menu,
+                'commandes' => $commandes
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Erreur lors du chargement des détails'], 500);
+        }
+    }
+
+    #[Route('/toggle-statut/{id}', name: 'app_menu_toggle_statut', methods: ['POST'])]
+    public function toggleStatut(int $id, Connection $connection): JsonResponse
+    {
+        try {
+            $menu = $connection->fetchAssociative("
+                SELECT id, nom, est_archive FROM menu WHERE id = ?
+            ", [$id]);
+
+            if (!$menu) {
+                return $this->json(['error' => 'Menu non trouvé'], 404);
+            }
+
+            $nouveauStatut = !$menu['est_archive'];
+            
+            $connection->executeStatement("
+                UPDATE menu SET est_archive = ? WHERE id = ?
+            ", [$nouveauStatut, $id]);
+
+            $action = $nouveauStatut ? 'archivé' : 'activé';
+
+            return $this->json([
+                'success' => true,
+                'message' => "Menu {$action} avec succès",
+                'nouveau_statut' => $nouveauStatut
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Erreur lors du changement de statut'], 500);
+        }
+    }
+
+    #[Route('/delete/{id}', name: 'app_menu_delete', methods: ['POST'])]
+    public function delete(int $id, Connection $connection): JsonResponse
+    {
+        try {
+            $menu = $connection->fetchAssociative("
+                SELECT id, nom FROM menu WHERE id = ?
+            ", [$id]);
+
+            if (!$menu) {
+                return $this->json(['error' => 'Menu non trouvé'], 404);
+            }
+
+            $commandesLiees = $connection->fetchOne("
+                SELECT COUNT(*) FROM ligne_commande WHERE produit_id = ?
+            ", [$id]);
+
+            if ($commandesLiees > 0) {
+                return $this->json(['error' => 'Impossible de supprimer : menu lié à des commandes'], 400);
+            }
+
+            $connection->executeStatement("DELETE FROM menu WHERE id = ?", [$id]);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Menu supprimé avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Erreur lors de la suppression'], 500);
+        }
+    }
+
+    private function getDescriptionMenu(string $nom): string
+    {
+        $descriptions = [
+            'Menu Classic' => 'Le menu incontournable avec burger, frites et boisson',
+            'Menu Royal' => 'Notre menu premium avec les meilleurs ingrédients',
+            'Menu Chicken' => 'Menu savoureux avec notre burger au poulet signature',
+            'Menu Veggie' => 'Option végétarienne complète et équilibrée',
+            'Menu Kids' => 'Menu spécialement conçu pour les enfants'
+        ];
+        
+        return $descriptions[$nom] ?? 'Menu complet Brasil Burger avec burger, accompagnement et boisson';
+    }
+
+   
     #[Route('/seed', name: 'app_complement_seed')]
     public function seed(Connection $connection): Response
     {
@@ -106,64 +268,6 @@ class MenuController extends AbstractController
             
         } catch (\Exception $e) {
             return new Response("Erreur: " . $e->getMessage());
-        }
-    }
-
-    #[Route('/debug-simple', name: 'app_menu_debug_simple')]
-    public function debugSimple(Connection $connection): Response
-    {
-        try {
-            $countMenus = $connection->fetchOne("SELECT COUNT(*) FROM menu");
-            $countActifs = $connection->fetchOne("SELECT COUNT(*) FROM menu WHERE est_archive = false OR est_archive IS NULL");
-            $countProduits = $connection->fetchOne("SELECT COUNT(*) FROM produit");
-
-            $menus = $connection->fetchAllAssociative("
-                SELECT 
-                    m.id, m.nom, m.est_archive,
-                    b.nom as burger_nom, b.prix as burger_prix,
-                    bo.nom as boisson_nom, bo.prix as boisson_prix,
-                    f.nom as frite_nom, f.prix as frite_prix,
-                    COALESCE(b.prix, 0) + COALESCE(bo.prix, 0) + COALESCE(f.prix, 0) as prix_total
-                FROM menu m
-                LEFT JOIN produit b ON m.burger_id = b.id
-                LEFT JOIN produit bo ON m.boisson_id = bo.id  
-                LEFT JOIN produit f ON m.frite_id = f.id
-                LIMIT 5
-            ");
-
-            $html = "<h2>🎉 Debug Menus - Prix Calculés Automatiquement !</h2>";
-            $html .= "<p><strong>Total menus:</strong> $countMenus</p>";
-            $html .= "<p><strong>Menus actifs:</strong> $countActifs</p>";
-            $html .= "<p><strong>Total produits:</strong> $countProduits</p>";
-            
-            $html .= "<h3>📋 Menus avec Prix Calculés :</h3>";
-            $html .= "<table border='1' style='border-collapse: collapse; width: 100%;'>";
-            $html .= "<tr style='background: #f0f0f0;'>";
-            $html .= "<th>Menu</th><th>Burger</th><th>Boisson</th><th>Frite</th><th>Prix Calculé</th><th>Statut</th>";
-            $html .= "</tr>";
-            
-            foreach ($menus as $menu) {
-                $archiveStatus = !$menu['est_archive'] ? '✅ Actif' : '❌ Archivé';
-                $prixFormate = number_format($menu['prix_total'], 0, ',', ' ') . ' FCFA';
-                
-                $html .= "<tr>";
-                $html .= "<td><strong>" . htmlspecialchars($menu['nom']) . "</strong></td>";
-                $html .= "<td>" . ($menu['burger_nom'] ? htmlspecialchars($menu['burger_nom']) : "❌ NULL") . "</td>";
-                $html .= "<td>" . ($menu['boisson_nom'] ? htmlspecialchars($menu['boisson_nom']) : "❌ NULL") . "</td>";
-                $html .= "<td>" . ($menu['frite_nom'] ? htmlspecialchars($menu['frite_nom']) : "❌ NULL") . "</td>";
-                $html .= "<td><strong style='color: green; font-size: 1.2em;'>" . $prixFormate . "</strong></td>";
-                $html .= "<td>" . $archiveStatus . "</td>";
-                $html .= "</tr>";
-            }
-            
-            $html .= "</table>";
-            $html .= "<hr>";
-            $html .= "<p><a href='" . $this->generateUrl('app_menu_list') . "'>🚀 Voir l'Interface des Menus</a></p>";
-            
-            return new Response($html);
-
-        } catch (\Exception $e) {
-            return new Response("Erreur Debug: " . htmlspecialchars($e->getMessage()));
         }
     }
 

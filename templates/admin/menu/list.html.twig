@@ -4,11 +4,6 @@
 {% block page_title %}Gestion des Menus{% endblock %}
 {% block page_subtitle %}Gérez vos formules et menus complets{% endblock %}
 
-{% block stylesheets %}
-    {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('css/menu.css') }}">
-{% endblock %}
-
 {% block body %}
 <div class="menu-management">
     <div class="menu-header">
@@ -101,7 +96,7 @@
                                 <button class="action-btn view" title="Voir détails" onclick="voirDetailsMenu({{ menu.id }})">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button class="action-btn edit" title="Archiver/Activer" onclick="toggleStatutMenu({{ menu.id }}, '{{ menu.nom|e('js') }}')">
+                                <button class="action-btn edit" title="Archiver/Activer" onclick="toggleStatutMenu({{ menu.id }}, '{{ menu.nom|e('js') }}', {{ menu.est_archive ? 'true' : 'false' }})">
                                     <i class="fas fa-archive"></i>
                                 </button>
                                 <button class="action-btn delete" title="Supprimer" onclick="supprimerMenu({{ menu.id }}, '{{ menu.nom|e('js') }}')">
@@ -117,31 +112,525 @@
     </div>
 </div>
 
+<!-- Modal élégant -->
 <div id="modalOverlay" class="modal-overlay">
     <div class="modal-container">
         <div id="modalContent" class="modal-content">
         </div>
     </div>
 </div>
+
+<style>
+/* Styles identiques à ceux du BurgerController */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-container {
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: 20px;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+    overflow: hidden;
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from { 
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to { 
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    padding: 20px 25px;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header.danger {
+    background: var(--danger);
+}
+
+.modal-header.warning {
+    background: var(--warning);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s;
+}
+
+.close-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.modal-body {
+    padding: 25px;
+}
+
+.menu-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.stat-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+}
+
+.stat-icon.price { background: linear-gradient(135deg, #2196f3, #1976d2); }
+.stat-icon.sales { background: linear-gradient(135deg, #4caf50, #2e7d32); }
+.stat-icon.today { background: linear-gradient(135deg, #ff9800, #f57c00); }
+.stat-icon.revenue { background: linear-gradient(135deg, #9c27b0, #7b1fa2); }
+
+.stat-info h4 {
+    margin: 0 0 2px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--dark);
+}
+
+.stat-info p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--gray);
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 25px;
+}
+
+.btn-cancel, .btn-save, .btn-delete {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-cancel {
+    background: #f5f5f5;
+    color: var(--gray);
+}
+
+.btn-save {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-delete {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-cancel:hover { background: #e0e0e0; }
+.btn-save:hover { background: var(--primary-dark); }
+.btn-delete:hover { background: #d32f2f; }
+
+.warning-content {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.warning-content i {
+    color: var(--danger);
+    margin-bottom: 15px;
+}
+
+.warning-content h4 {
+    margin: 0 0 10px 0;
+    color: var(--dark);
+}
+
+.warning-content p {
+    margin: 5px 0;
+    color: var(--gray);
+}
+
+.warning-text {
+    color: var(--danger) !important;
+    font-weight: 600;
+}
+
+.recent-orders h4 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    color: var(--dark);
+}
+
+.orders-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.order-item:last-child {
+    border-bottom: none;
+}
+
+.order-date { font-size: 12px; color: var(--gray); }
+.order-quantity { font-weight: 600; color: var(--primary); }
+.order-total { font-weight: 600; color: var(--dark); }
+
+.no-orders {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--gray);
+}
+
+.no-orders i {
+    margin-bottom: 10px;
+    opacity: 0.3;
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    z-index: 1001;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+}
+
+.notification.show { transform: translateX(0); }
+.notification.success { background: #4caf50; }
+.notification.error { background: #f44336; }
+.notification.info { background: #2196f3; }
+
+.menu-composition {
+    margin: 15px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.composition-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.composition-item {
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    border: 2px solid #eee;
+}
+
+.composition-item h5 {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.composition-item p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--gray);
+}
+</style>
 {% endblock %}
 
 {% block javascripts %}
     {{ parent() }}
     <script>
-        function voirDetailsMenu(id) {
-            alert('Détails menu ' + id);
-        }
+        // Voir détails menu avec modal élégant
+        async function voirDetailsMenu(menuId) {
+            try {
+                const response = await fetch(`/admin/menu/details/${menuId}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    showNotification('❌ ' + data.error, 'error');
+                    return;
+                }
+                
+                const modalContent = `
+                    <div class="modal-header">
+                        <h3><i class="fas fa-layer-group"></i> ${data.menu.nom}</h3>
+                        <button onclick="fermerModal()" class="close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="menu-composition">
+                            <h4><i class="fas fa-utensils"></i> Composition du menu</h4>
+                            <div class="composition-grid">
+                                <div class="composition-item">
+                                    <h5><i class="fas fa-hamburger"></i> Burger</h5>
+                                    <p>${data.menu.burger_nom || 'Non défini'}</p>
+                                </div>
+                                <div class="composition-item">
+                                    <h5><i class="fas fa-circle"></i> Accompagnement</h5>
+                                    <p>${data.menu.frite_nom || 'Non défini'}</p>
+                                </div>
+                                <div class="composition-item">
+                                    <h5><i class="fas fa-glass"></i> Boisson</h5>
+                                    <p>${data.menu.boisson_nom || 'Non défini'}</p>
+                                </div>
+                            </div>
+                        </div>
 
-        function toggleStatutMenu(id, nom) {
-            if (confirm('Changer le statut de ' + nom + ' ?')) {
-                alert('Toggle menu ' + id);
+                        <div class="menu-stats">
+                            <div class="stat-item">
+                                <div class="stat-icon price"><i class="fas fa-tag"></i></div>
+                                <div class="stat-info">
+                                    <h4>${data.menu.prix_formate} FCFA</h4>
+                                    <p>Prix du menu</p>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon sales"><i class="fas fa-chart-line"></i></div>
+                                <div class="stat-info">
+                                    <h4>${data.menu.ventes_totales}</h4>
+                                    <p>Ventes totales</p>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon today"><i class="fas fa-calendar-day"></i></div>
+                                <div class="stat-info">
+                                    <h4>${data.menu.ventes_jour}</h4>
+                                    <p>Ventes aujourd'hui</p>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon revenue"><i class="fas fa-coins"></i></div>
+                                <div class="stat-info">
+                                    <h4>${data.menu.chiffre_affaires_formate} FCFA</h4>
+                                    <p>Chiffre d'affaires</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${data.commandes.length > 0 ? `
+                        <div class="recent-orders">
+                            <h4><i class="fas fa-history"></i> Commandes récentes</h4>
+                            <div class="orders-list">
+                                ${data.commandes.slice(0, 5).map(cmd => `
+                                    <div class="order-item">
+                                        <div class="order-date">${cmd.date_formate}</div>
+                                        <div class="order-quantity">${cmd.quantite}x</div>
+                                        <div class="order-total">${cmd.total_formate} FCFA</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : `
+                        <div class="no-orders">
+                            <i class="fas fa-inbox fa-2x"></i>
+                            <p>Aucune commande encore</p>
+                        </div>
+                        `}
+                    </div>
+                `;
+                
+                document.getElementById('modalContent').innerHTML = modalContent;
+                document.getElementById('modalOverlay').classList.add('active');
+                
+            } catch (error) {
+                console.error('Erreur:', error);
+                showNotification('❌ Erreur lors du chargement', 'error');
             }
         }
 
-        function supprimerMenu(id, nom) {
-            if (confirm('Supprimer ' + nom + ' ?')) {
-                alert('Suppression menu ' + id);
+        // Toggle statut menu
+        async function toggleStatutMenu(menuId, nomMenu, estArchive) {
+            const action = estArchive ? 'activer' : 'archiver';
+            const modalContent = `
+                <div class="modal-header warning">
+                    <h3><i class="fas fa-archive"></i> ${action.charAt(0).toUpperCase() + action.slice(1)} le menu</h3>
+                    <button onclick="fermerModal()" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="warning-content">
+                        <i class="fas fa-archive fa-3x"></i>
+                        <h4>Confirmer l'action</h4>
+                        <p>Voulez-vous ${action} le menu <strong>"${nomMenu}"</strong> ?</p>
+                        <p>${estArchive ? 'Il redeviendra visible dans la liste.' : 'Il sera masqué de la liste.'}</p>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" onclick="fermerModal()" class="btn-cancel">Annuler</button>
+                        <button type="button" onclick="confirmerToggleStatut(${menuId})" class="btn-save">${action.charAt(0).toUpperCase() + action.slice(1)}</button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('modalContent').innerHTML = modalContent;
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        // Confirmer toggle statut
+        async function confirmerToggleStatut(menuId) {
+            try {
+                const response = await fetch(`/admin/menu/toggle-statut/${menuId}`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('✅ ' + data.message, 'success');
+                    fermerModal();
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification('❌ ' + data.error, 'error');
+                }
+                
+            } catch (error) {
+                showNotification('❌ Erreur lors du changement de statut', 'error');
             }
         }
+
+        // Supprimer menu avec confirmation élégante
+        async function supprimerMenu(menuId, nomMenu) {
+            const modalContent = `
+                <div class="modal-header danger">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Supprimer le menu</h3>
+                    <button onclick="fermerModal()" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="warning-content">
+                        <i class="fas fa-trash-alt fa-3x"></i>
+                        <h4>Êtes-vous sûr ?</h4>
+                        <p>Vous êtes sur le point de supprimer <strong>"${nomMenu}"</strong>.</p>
+                        <p class="warning-text">Cette action est irréversible !</p>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" onclick="fermerModal()" class="btn-cancel">Annuler</button>
+                        <button type="button" onclick="confirmerSuppressionMenu(${menuId})" class="btn-delete">Supprimer</button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('modalContent').innerHTML = modalContent;
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        // Confirmer suppression
+        async function confirmerSuppressionMenu(menuId) {
+            try {
+                const response = await fetch(`/admin/menu/delete/${menuId}`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('✅ ' + data.message, 'success');
+                    fermerModal();
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification('❌ ' + data.error, 'error');
+                }
+                
+            } catch (error) {
+                showNotification('❌ Erreur lors de la suppression', 'error');
+            }
+        }
+
+        // Fermer modal
+        function fermerModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+
+        // Notifications toast
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Fermer modal en cliquant sur l'overlay
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'modalOverlay') {
+                fermerModal();
+            }
+        });
     </script>
 {% endblock %}
