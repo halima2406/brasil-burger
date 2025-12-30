@@ -17,26 +17,37 @@ class CommandeController extends AbstractController
     {
         try {
             $statusFilter = $request->query->get('status', 'all');
+            $search = $request->query->get('search', '');
             
-            $commandes = $connection->fetchAllAssociative("
+            $toutesLesCommandes = $connection->fetchAllAssociative("
                 SELECT c.id, c.client_id, c.montant_total, c.statut, 
                        c.date_commande, c.type_consommation
                 FROM commande c 
                 ORDER BY c.date_commande DESC
-                LIMIT 10
             ");
 
-            foreach ($commandes as &$commande) {
+            foreach ($toutesLesCommandes as &$commande) {
                 $commande['numero'] = '#CMD-' . str_pad($commande['id'], 6, '0', STR_PAD_LEFT);
                 $commande['client_nom'] = 'Client ' . $commande['client_id'];
+                $commande['telephone'] = '77 ' . str_pad($commande['client_id'] * 123, 7, '0', STR_PAD_LEFT);
                 $commande['prix_formate'] = number_format($commande['montant_total'], 0, ',', ' ');
                 $commande['heure'] = date('H:i', strtotime($commande['date_commande']));
+                $commande['client_initiales'] = $this->getClientInitiales($commande['client_nom']);
+                $commande['mode_badge'] = $this->getModeBadge($commande['type_consommation']);
+                $commande['status_badge'] = $this->getStatusBadge($commande['statut']);
+                $commande['articles_count'] = rand(1, 5) . ' articles';
             }
+
+            $stats = $this->calculerStatistiquesReelles($toutesLesCommandes);
+            $commandesFiltrees = $this->filtrerCommandes($toutesLesCommandes, $statusFilter, $search);
+            $commandes = array_slice($commandesFiltrees, 0, 10);
 
             return $this->render('admin/commande/list.html.twig', [
                 'commandes' => $commandes,
+                'stats' => $stats,
                 'statusFilter' => $statusFilter,
-                'totalCommandes' => count($commandes)
+                'search' => $search,
+                'totalCommandes' => count($commandesFiltrees)
             ]);
 
         } catch (\Exception $e) {
@@ -69,6 +80,8 @@ class CommandeController extends AbstractController
 
             $commande['client_nom'] = 'Client ' . $commande['client_id'];
             $commande['prix_formate'] = number_format($commande['montant_total'], 0, ',', ' ');
+            $commande['status_badge'] = $this->getStatusBadge($commande['statut']);
+            $commande['mode_badge'] = $this->getModeBadge($commande['type_consommation']);
 
             foreach ($produits as &$produit) {
                 $produit['prix_formate'] = number_format($produit['prix_unitaire'], 0, ',', ' ');
@@ -152,5 +165,100 @@ class CommandeController extends AbstractController
         } catch (\Exception $e) {
             return $this->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    public function filtrerCommandes(array $commandes, string $statusFilter, string $search): array
+    {
+        $filtered = $commandes;
+
+        if ($statusFilter !== 'all') {
+            $filtered = array_filter($filtered, function($cmd) use ($statusFilter) {
+                return match($statusFilter) {
+                    'pending' => $cmd['statut'] === 'VALIDEE',
+                    'preparing' => $cmd['statut'] === 'EN_COURS',  
+                    'delivering' => in_array($cmd['statut'], ['PRETE', 'EN_LIVRAISON']),
+                    'completed' => in_array($cmd['statut'], ['LIVREE', 'TERMINEE']),
+                    'cancelled' => $cmd['statut'] === 'ANNULEE',
+                    default => true
+                };
+            });
+        }
+
+        if (!empty($search)) {
+            $filtered = array_filter($filtered, function($cmd) use ($search) {
+                return stripos($cmd['client_nom'] ?? '', $search) !== false || 
+                    stripos($cmd['numero'], $search) !== false;
+            });
+        }
+
+        return array_values($filtered);
+    }
+
+    public function calculerStatistiquesReelles(array $commandes): array
+    {
+        $stats = [
+            'all' => count($commandes),
+            'pending' => 0,
+            'preparing' => 0,
+            'delivering' => 0,
+            'completed' => 0,
+            'cancelled' => 0
+        ];
+
+        foreach ($commandes as $commande) {
+            switch ($commande['statut']) {
+                case 'VALIDEE':
+                    $stats['pending']++;
+                    break;
+                case 'EN_COURS':
+                    $stats['preparing']++;
+                    break;
+                case 'PRETE':
+                case 'EN_LIVRAISON':
+                    $stats['delivering']++;
+                    break;
+                case 'LIVREE':
+                case 'TERMINEE':
+                    $stats['completed']++;
+                    break;
+                case 'ANNULEE':
+                    $stats['cancelled']++;
+                    break;
+            }
+        }
+
+        return $stats;
+    }
+
+    public function getClientInitiales(?string $nom): string
+    {
+        if (!$nom) return 'CL';
+        $parts = explode(' ', trim($nom));
+        if (count($parts) >= 2) {
+            return strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1));
+        }
+        return strtoupper(substr($nom, 0, 2));
+    }
+
+    public function getModeBadge(?string $type): array
+    {
+        return match($type) {
+            'A_EMPORTER' => ['icon' => '📦', 'text' => 'Emporter', 'class' => 'emporter'],
+            'LIVRAISON' => ['icon' => '🏍️', 'text' => 'Livraison', 'class' => 'livraison'], 
+            'SUR_PLACE' => ['icon' => '🍽️', 'text' => 'Sur place', 'class' => 'surplace'],
+            default => ['icon' => '🏍️', 'text' => 'Livraison', 'class' => 'livraison']
+        };
+    }
+
+    public function getStatusBadge(?string $statut): array
+    {
+        return match($statut) {
+            'VALIDEE' => ['text' => 'En attente', 'class' => 'pending'],
+            'EN_COURS' => ['text' => 'Préparation', 'class' => 'preparing'],
+            'PRETE', 'EN_LIVRAISON' => ['text' => 'Livraison', 'class' => 'delivering'],
+            'LIVREE', 'TERMINEE' => ['text' => 'Terminée', 'class' => 'completed'],
+            'ANNULEE' => ['text' => 'Annulée', 'class' => 'cancelled'],
+            default => ['text' => 'En attente', 'class' => 'pending']
+        };
     }
 }
