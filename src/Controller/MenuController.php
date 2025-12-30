@@ -105,4 +105,62 @@ class MenuController extends AbstractController
             return new Response("Erreur: " . $e->getMessage());
         }
     }
+
+    #[Route('/debug-simple', name: 'app_menu_debug_simple')]
+    public function debugSimple(Connection $connection): Response
+    {
+        try {
+            $countMenus = $connection->fetchOne("SELECT COUNT(*) FROM menu");
+            $countActifs = $connection->fetchOne("SELECT COUNT(*) FROM menu WHERE est_archive = false OR est_archive IS NULL");
+            $countProduits = $connection->fetchOne("SELECT COUNT(*) FROM produit");
+
+            $menus = $connection->fetchAllAssociative("
+                SELECT 
+                    m.id, m.nom, m.est_archive,
+                    b.nom as burger_nom, b.prix as burger_prix,
+                    bo.nom as boisson_nom, bo.prix as boisson_prix,
+                    f.nom as frite_nom, f.prix as frite_prix,
+                    COALESCE(b.prix, 0) + COALESCE(bo.prix, 0) + COALESCE(f.prix, 0) as prix_total
+                FROM menu m
+                LEFT JOIN produit b ON m.burger_id = b.id
+                LEFT JOIN produit bo ON m.boisson_id = bo.id  
+                LEFT JOIN produit f ON m.frite_id = f.id
+                LIMIT 5
+            ");
+
+            $html = "<h2>🎉 Debug Menus - Prix Calculés Automatiquement !</h2>";
+            $html .= "<p><strong>Total menus:</strong> $countMenus</p>";
+            $html .= "<p><strong>Menus actifs:</strong> $countActifs</p>";
+            $html .= "<p><strong>Total produits:</strong> $countProduits</p>";
+            
+            $html .= "<h3>📋 Menus avec Prix Calculés :</h3>";
+            $html .= "<table border='1' style='border-collapse: collapse; width: 100%;'>";
+            $html .= "<tr style='background: #f0f0f0;'>";
+            $html .= "<th>Menu</th><th>Burger</th><th>Boisson</th><th>Frite</th><th>Prix Calculé</th><th>Statut</th>";
+            $html .= "</tr>";
+            
+            foreach ($menus as $menu) {
+                $archiveStatus = !$menu['est_archive'] ? '✅ Actif' : '❌ Archivé';
+                $prixFormate = number_format($menu['prix_total'], 0, ',', ' ') . ' FCFA';
+                
+                $html .= "<tr>";
+                $html .= "<td><strong>" . htmlspecialchars($menu['nom']) . "</strong></td>";
+                $html .= "<td>" . ($menu['burger_nom'] ? htmlspecialchars($menu['burger_nom']) : "❌ NULL") . "</td>";
+                $html .= "<td>" . ($menu['boisson_nom'] ? htmlspecialchars($menu['boisson_nom']) : "❌ NULL") . "</td>";
+                $html .= "<td>" . ($menu['frite_nom'] ? htmlspecialchars($menu['frite_nom']) : "❌ NULL") . "</td>";
+                $html .= "<td><strong style='color: green; font-size: 1.2em;'>" . $prixFormate . "</strong></td>";
+                $html .= "<td>" . $archiveStatus . "</td>";
+                $html .= "</tr>";
+            }
+            
+            $html .= "</table>";
+            $html .= "<hr>";
+            $html .= "<p><a href='" . $this->generateUrl('app_menu_list') . "'>🚀 Voir l'Interface des Menus</a></p>";
+            
+            return new Response($html);
+
+        } catch (\Exception $e) {
+            return new Response("Erreur Debug: " . htmlspecialchars($e->getMessage()));
+        }
+    }
 }
