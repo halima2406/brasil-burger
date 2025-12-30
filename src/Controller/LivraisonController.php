@@ -23,14 +23,15 @@ class LivraisonController extends AbstractController
             $commandesEnAttente = $connection->fetchAllAssociative("
                 SELECT 
                     c.id,
-                    'CMD' || c.id as numero_commande,
+                    c.id as numero_commande,
                     c.date_commande,
                     c.montant_total as total,
-                    'Client' as client_nom,
-                    'Adresse livraison' as adresse_livraison,
-                    'Téléphone client' as telephone_client,
-                    z.quartier,
-                    z.prix as prix_livraison
+                    'Client ' || c.client_id as client_nom,
+                    'Adresse client ' || c.client_id as adresse_livraison,
+                    '77 123 45 67' as telephone_client,
+                    c.zone_id,
+                    COALESCE(z.quartier, 'Zone inconnue') as quartier,
+                    COALESCE(z.prix, 600) as prix_livraison
                 FROM commande c
                 LEFT JOIN zone z ON c.zone_id = z.id
                 WHERE c.statut IN ('VALIDEE', 'EN_COURS') 
@@ -42,15 +43,15 @@ class LivraisonController extends AbstractController
             $livraisonsEnCours = $connection->fetchAllAssociative("
                 SELECT 
                     c.id,
-                    'CMD' || c.id as numero_commande,
+                    c.id as numero_commande,
                     c.date_commande,
                     c.montant_total as total,
-                    'Adresse livraison' as adresse_livraison,
-                    'Client' as client_nom,
+                    'Adresse client ' || c.client_id as adresse_livraison,
+                    'Client ' || c.client_id as client_nom,
+                    c.zone_id,
                     l.nom as livreur_nom,
                     l.telephone as livreur_tel,
-                    z.quartier,
-                    'ASSIGNEE' as statut_livraison
+                    COALESCE(z.quartier, 'Zone inconnue') as quartier
                 FROM commande c
                 LEFT JOIN livreur l ON c.livreur_id = l.id
                 LEFT JOIN zone z ON c.zone_id = z.id
@@ -76,17 +77,15 @@ class LivraisonController extends AbstractController
 
             foreach ($commandesEnAttente as &$commande) {
                 $commande['total_formate'] = number_format($commande['total'], 0, ',', ' ') . ' FCFA';
-                $commande['prix_livraison_formate'] = number_format($commande['prix_livraison'] ?? 0, 0, ',', ' ') . ' FCFA';
+                $commande['prix_livraison_formate'] = number_format($commande['prix_livraison'], 0, ',', ' ') . ' FCFA';
                 $commande['date_formate'] = date('d/m/Y H:i', strtotime($commande['date_commande']));
                 $commande['priorite'] = $this->getPriorite($commande['date_commande']);
-                $commande['nb_produits'] = 1;
             }
 
             foreach ($livraisonsEnCours as &$livraison) {
                 $livraison['total_formate'] = number_format($livraison['total'], 0, ',', ' ') . ' FCFA';
                 $livraison['date_formate'] = date('d/m/Y H:i', strtotime($livraison['date_commande']));
-                $livraison['statut_couleur'] = $this->getStatutCouleur($livraison['statut_livraison']);
-                $livraison['nb_produits'] = 1;
+                $livraison['statut_couleur'] = 'info';
             }
 
             return $this->render('admin/livraison/list.html.twig', [
@@ -117,17 +116,16 @@ class LivraisonController extends AbstractController
             $commandes = $connection->fetchAllAssociative("
                 SELECT 
                     c.id,
-                    'CMD' || c.id as numero_commande,
+                    c.id as numero_commande,
                     c.date_commande,
                     c.montant_total as total,
-                    'Adresse livraison' as adresse_livraison,
-                    'Téléphone client' as telephone_client,
-                    'Note commande' as note_commande,
-                    'Client' as client_nom,
-                    z.id as zone_id,
-                    z.quartier,
-                    z.prix as prix_livraison,
-                    1 as nb_produits
+                    'Adresse client ' || c.client_id as adresse_livraison,
+                    '77 123 45 67' as telephone_client,
+                    '' as note_commande,
+                    'Client ' || c.client_id as client_nom,
+                    c.zone_id,
+                    COALESCE(z.quartier, 'Zone inconnue') as quartier,
+                    COALESCE(z.prix, 600) as prix_livraison
                 FROM commande c
                 LEFT JOIN zone z ON c.zone_id = z.id
                 WHERE c.statut IN ('VALIDEE', 'EN_COURS') 
@@ -162,8 +160,8 @@ class LivraisonController extends AbstractController
 
             foreach ($commandes as &$commande) {
                 $commande['total_formate'] = number_format($commande['total'], 0, ',', ' ') . ' FCFA';
-                $commande['prix_livraison_formate'] = number_format($commande['prix_livraison'] ?? 0, 0, ',', ' ') . ' FCFA';
-                $commande['total_avec_livraison'] = number_format($commande['total'] + ($commande['prix_livraison'] ?? 0), 0, ',', ' ') . ' FCFA';
+                $commande['prix_livraison_formate'] = number_format($commande['prix_livraison'], 0, ',', ' ') . ' FCFA';
+                $commande['total_avec_livraison'] = number_format($commande['total'] + $commande['prix_livraison'], 0, ',', ' ') . ' FCFA';
                 $commande['date_formate'] = date('d/m/Y H:i', strtotime($commande['date_commande']));
                 $commande['priorite'] = $this->getPriorite($commande['date_commande']);
             }
@@ -191,17 +189,17 @@ class LivraisonController extends AbstractController
             $livreurId = (int) $request->request->get('livreur_id');
             
             if (!$livreurId) {
-                return $this->json(['error' => 'Livreur requis'], 400);
+                return $this->json(['success' => false, 'error' => 'Livreur requis'], 400);
             }
 
             $commande = $connection->fetchAssociative("
-                SELECT id, 'CMD' || id as numero_commande, statut 
+                SELECT id, statut 
                 FROM commande 
                 WHERE id = ? AND livreur_id IS NULL
             ", [$commandeId]);
 
             if (!$commande) {
-                return $this->json(['error' => 'Commande non trouvée ou déjà assignée'], 404);
+                return $this->json(['success' => false, 'error' => 'Commande non trouvée ou déjà assignée'], 404);
             }
 
             $livreur = $connection->fetchAssociative("
@@ -211,148 +209,22 @@ class LivraisonController extends AbstractController
             ", [$livreurId]);
 
             if (!$livreur) {
-                return $this->json(['error' => 'Livreur non trouvé'], 404);
+                return $this->json(['success' => false, 'error' => 'Livreur non trouvé'], 404);
             }
 
             $connection->executeStatement("
                 UPDATE commande 
-                SET livreur_id = ?, 
-                    statut_livraison = 'ASSIGNEE',
-                    statut = 'PRETE'
+                SET livreur_id = ?, statut = 'PRETE'
                 WHERE id = ?
             ", [$livreurId, $commandeId]);
 
             return $this->json([
                 'success' => true,
-                'message' => "Commande #{$commande['numero_commande']} assignée à {$livreur['nom']}"
+                'message' => "Commande #CMD{$commandeId} assignée à {$livreur['nom']}"
             ]);
 
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
-    #[Route('/suivi', name: 'app_livraison_suivi')]
-    public function suivi(Request $request, Connection $connection): Response
-    {
-        try {
-            $page = max(1, (int) $request->query->get('page', 1));
-            $statutFilter = $request->query->get('statut', 'all');
-            $livreurFilter = $request->query->get('livreur', 'all');
-            $limit = self::LIMIT;
-            $offset = ($page - 1) * $limit;
-
-            $whereConditions = ["c.livreur_id IS NOT NULL"];
-            
-            if ($statutFilter !== 'all') {
-                $whereConditions[] = "c.statut_livraison = '" . $connection->quote($statutFilter) . "'";
-            }
-            
-            if ($livreurFilter !== 'all') {
-                $whereConditions[] = "c.livreur_id = " . (int)$livreurFilter;
-            }
-
-            $whereClause = "WHERE " . implode(' AND ', $whereConditions);
-
-            $livraisons = $connection->fetchAllAssociative("
-                SELECT 
-                    c.id,
-                    'CMD' || c.id as numero_commande,
-                    c.date_commande,
-                    c.montant_total as total,
-                    'Adresse livraison' as adresse_livraison,
-                    'Téléphone client' as telephone_client,
-                    c.statut,
-                    COALESCE(c.statut_livraison, 'ASSIGNEE') as statut_livraison,
-                    'Client' as client_nom,
-                    l.nom as livreur_nom,
-                    l.telephone as livreur_tel,
-                    z.quartier,
-                    z.prix as prix_livraison
-                FROM commande c
-                LEFT JOIN livreur l ON c.livreur_id = l.id
-                LEFT JOIN zone z ON c.zone_id = z.id
-                $whereClause
-                ORDER BY c.date_commande DESC
-                LIMIT $limit OFFSET $offset
-            ");
-
-            $totalLivraisons = $connection->fetchOne("
-                SELECT COUNT(*) FROM commande c $whereClause
-            ");
-            $totalPages = (int) ceil($totalLivraisons / $limit);
-
-            $livreurs = $connection->fetchAllAssociative("
-                SELECT id, nom 
-                FROM livreur 
-                WHERE est_archive = false 
-                ORDER BY nom ASC
-            ");
-
-            $statuts = [
-                'ASSIGNEE' => 'Assignée',
-                'EN_ROUTE' => 'En route',
-                'LIVREE' => 'Livrée',
-                'PROBLEME' => 'Problème'
-            ];
-
-            foreach ($livraisons as &$livraison) {
-                $livraison['total_formate'] = number_format($livraison['total'], 0, ',', ' ') . ' FCFA';
-                $livraison['prix_livraison_formate'] = number_format($livraison['prix_livraison'] ?? 0, 0, ',', ' ') . ' FCFA';
-                $livraison['date_formate'] = date('d/m/Y H:i', strtotime($livraison['date_commande']));
-                $livraison['statut_couleur'] = $this->getStatutCouleur($livraison['statut_livraison']);
-                $livraison['duree'] = $this->getDureeLivraison($livraison['date_commande']);
-            }
-
-            return $this->render('admin/livraison/suivi.html.twig', [
-                'livraisons' => $livraisons,
-                'livreurs' => $livreurs,
-                'statuts' => $statuts,
-                'pageEnCours' => $page,
-                'nbrePage' => $totalPages,
-                'totalLivraisons' => $totalLivraisons,
-                'statutFilter' => $statutFilter,
-                'livreurFilter' => $livreurFilter,
-                'database_ready' => true
-            ]);
-
-        } catch (\Exception $e) {
-            return new Response("Erreur suivi: " . $e->getMessage());
-        }
-    }
-
-    #[Route('/changer-statut/{commandeId}', name: 'app_livraison_changer_statut', methods: ['POST'])]
-    public function changerStatut(int $commandeId, Request $request, Connection $connection): JsonResponse
-    {
-        try {
-            $nouveauStatut = $request->request->get('statut');
-            
-            $statutsValides = ['ASSIGNEE', 'EN_ROUTE', 'LIVREE', 'PROBLEME'];
-            if (!in_array($nouveauStatut, $statutsValides)) {
-                return $this->json(['error' => 'Statut invalide'], 400);
-            }
-
-            $result = $connection->executeStatement("
-                UPDATE commande 
-                SET statut_livraison = ?,
-                    statut = CASE 
-                        WHEN ? = 'LIVREE' THEN 'TERMINEE'
-                        ELSE statut 
-                    END
-                WHERE id = ? AND livreur_id IS NOT NULL
-            ", [$nouveauStatut, $nouveauStatut, $commandeId]);
-
-            if ($result === 0) {
-                return $this->json(['error' => 'Commande non trouvée'], 404);
-            }
-
-            return $this->json([
-                'success' => true,
-                'message' => 'Statut mis à jour avec succès'
-            ]);
-
-        } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], 500);
+            return $this->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -363,20 +235,20 @@ class LivraisonController extends AbstractController
             $commande = $connection->fetchAssociative("
                 SELECT 
                     c.id,
-                    'CMD' || c.id as numero_commande,
+                    c.id as numero_commande,
                     c.date_commande,
                     c.montant_total as total,
-                    'Adresse livraison' as adresse_livraison,
-                    'Téléphone client' as telephone_client,
-                    'Note commande' as note_commande,
+                    'Adresse client ' || c.client_id as adresse_livraison,
+                    '77 123 45 67' as telephone_client,
+                    '' as note_commande,
                     c.statut,
-                    COALESCE(c.statut_livraison, 'EN_ATTENTE') as statut_livraison,
-                    'Client' as client_nom,
+                    c.zone_id,
+                    'Client ' || c.client_id as client_nom,
                     'client@email.com' as client_email,
                     l.nom as livreur_nom,
                     l.telephone as livreur_tel,
-                    z.quartier,
-                    z.prix as prix_livraison
+                    COALESCE(z.quartier, 'Zone inconnue') as quartier,
+                    COALESCE(z.prix, 600) as prix_livraison
                 FROM commande c
                 LEFT JOIN livreur l ON c.livreur_id = l.id
                 LEFT JOIN zone z ON c.zone_id = z.id
@@ -384,24 +256,27 @@ class LivraisonController extends AbstractController
             ", [$commandeId]);
 
             if (!$commande) {
-                return $this->json(['error' => 'Commande non trouvée'], 404);
+                return $this->json(['success' => false, 'error' => 'Commande non trouvée'], 404);
             }
 
             $produits = $connection->fetchAllAssociative("
                 SELECT 
-                    p.nom,
+                    CASE 
+                        WHEN lc.produit_id IS NOT NULL THEN 'Produit #' || lc.produit_id
+                        WHEN lc.menu_id IS NOT NULL THEN 'Menu #' || lc.menu_id
+                        ELSE 'Article'
+                    END as nom,
                     lc.quantite,
                     lc.prix_unitaire,
                     (lc.quantite * lc.prix_unitaire) as sous_total
                 FROM ligne_commande lc
-                JOIN produit p ON lc.produit_id = p.id
                 WHERE lc.commande_id = ?
-                ORDER BY p.nom ASC
+                ORDER BY lc.id ASC
             ", [$commandeId]);
 
             $commande['total_formate'] = number_format($commande['total'], 0, ',', ' ') . ' FCFA';
-            $commande['prix_livraison_formate'] = number_format($commande['prix_livraison'] ?? 0, 0, ',', ' ') . ' FCFA';
-            $commande['total_final'] = number_format($commande['total'] + ($commande['prix_livraison'] ?? 0), 0, ',', ' ') . ' FCFA';
+            $commande['prix_livraison_formate'] = number_format($commande['prix_livraison'], 0, ',', ' ') . ' FCFA';
+            $commande['total_final'] = number_format($commande['total'] + $commande['prix_livraison'], 0, ',', ' ') . ' FCFA';
             $commande['date_formate'] = date('d/m/Y H:i', strtotime($commande['date_commande']));
 
             foreach ($produits as &$produit) {
@@ -410,12 +285,13 @@ class LivraisonController extends AbstractController
             }
 
             return $this->json([
+                'success' => true,
                 'commande' => $commande,
                 'produits' => $produits
             ]);
 
         } catch (\Exception $e) {
-            return $this->json(['error' => $e->getMessage()], 500);
+            return $this->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -445,12 +321,6 @@ class LivraisonController extends AbstractController
                 AND DATE(date_commande) = CURRENT_DATE
             ") ?: 0;
 
-            $stats['problemes'] = (int) $connection->fetchOne("
-                SELECT COUNT(*) 
-                FROM commande 
-                WHERE statut_livraison = 'PROBLEME'
-            ") ?: 0;
-
             $caLivraisons = $connection->fetchOne("
                 SELECT COALESCE(SUM(z.prix), 0)
                 FROM commande c
@@ -460,22 +330,6 @@ class LivraisonController extends AbstractController
             ");
             $stats['ca_livraisons_jour'] = number_format($caLivraisons ?: 0, 0, ',', ' ') . ' FCFA';
 
-            $livreurActif = $connection->fetchAssociative("
-                SELECT l.nom, COUNT(*) as nb_livraisons
-                FROM commande c
-                LEFT JOIN livreur l ON c.livreur_id = l.id
-                WHERE c.statut = 'TERMINEE'
-                AND DATE(c.date_commande) = CURRENT_DATE
-                AND l.nom IS NOT NULL
-                GROUP BY l.id, l.nom
-                ORDER BY nb_livraisons DESC
-                LIMIT 1
-            ");
-
-            $stats['livreur_actif'] = $livreurActif ? 
-                $livreurActif['nom'] . ' (' . $livreurActif['nb_livraisons'] . ' livraisons)' : 
-                'Aucun';
-
             return $stats;
 
         } catch (\Exception $e) {
@@ -483,22 +337,9 @@ class LivraisonController extends AbstractController
                 'en_attente' => 0,
                 'en_cours' => 0,
                 'livrees_aujourd_hui' => 0,
-                'problemes' => 0,
-                'ca_livraisons_jour' => '0 FCFA',
-                'livreur_actif' => 'Erreur'
+                'ca_livraisons_jour' => '0 FCFA'
             ];
         }
-    }
-
-    public function getStatutCouleur(string $statut): string
-    {
-        return match($statut) {
-            'ASSIGNEE' => 'info',
-            'EN_ROUTE' => 'warning',
-            'LIVREE' => 'success',
-            'PROBLEME' => 'danger',
-            default => 'secondary'
-        };
     }
 
     public function getPriorite(string $dateCommande): string
@@ -509,16 +350,82 @@ class LivraisonController extends AbstractController
         if ($heures > 1) return 'normale';
         return 'recente';
     }
+    #[Route('/suivi', name: 'app_livraison_suivi')]
+public function suivi(Connection $connection): Response
+{
+    try {
+        // Toutes les livraisons en cours
+        $livraisonsEnCours = $connection->fetchAllAssociative("
+            SELECT 
+                c.id,
+                c.id as numero_commande,
+                c.date_commande,
+                c.montant_total as total,
+                'Client ' || c.client_id as client_nom,
+                'Adresse client ' || c.client_id as adresse_livraison,
+                '77 123 45 67' as telephone_client,
+                c.zone_id,
+                l.nom as livreur_nom,
+                l.telephone as livreur_tel,
+                COALESCE(z.quartier, 'Zone inconnue') as quartier,
+                COALESCE(z.prix, 600) as prix_livraison,
+                c.statut
+            FROM commande c
+            LEFT JOIN livreur l ON c.livreur_id = l.id
+            LEFT JOIN zone z ON c.zone_id = z.id
+            WHERE c.livreur_id IS NOT NULL 
+            AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE')
+            ORDER BY c.date_commande DESC
+        ");
 
-    public function getDureeLivraison(string $dateCommande): string
-    {
-        $minutes = (time() - strtotime($dateCommande)) / 60;
-        
-        if ($minutes < 60) {
-            return floor($minutes) . ' min';
-        } else {
-            $heures = floor($minutes / 60);
-            return $heures . 'h' . floor($minutes % 60) . 'm';
+        $zones = $connection->fetchAllAssociative("
+            SELECT DISTINCT z.id, z.quartier
+            FROM zone z
+            JOIN commande c ON z.id = c.zone_id
+            WHERE c.livreur_id IS NOT NULL 
+            AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE')
+            ORDER BY z.quartier ASC
+        ");
+
+        foreach ($livraisonsEnCours as &$livraison) {
+            $livraison['total_formate'] = number_format($livraison['total'], 0, ',', ' ') . ' FCFA';
+            $livraison['prix_livraison_formate'] = number_format($livraison['prix_livraison'], 0, ',', ' ') . ' FCFA';
+            $livraison['date_formate'] = date('d/m/Y H:i', strtotime($livraison['date_commande']));
+            $livraison['statut_badge'] = $this->getStatutBadge($livraison['statut']);
+            $livraison['temps_ecoule'] = $this->getTempsEcoule($livraison['date_commande']);
         }
+
+        return $this->render('admin/livraison/suivi.html.twig', [
+            'livraisonsEnCours' => $livraisonsEnCours,
+            'zones' => $zones,
+            'totalLivraisons' => count($livraisonsEnCours)
+        ]);
+
+    } catch (\Exception $e) {
+        return new Response("Erreur suivi: " . $e->getMessage());
     }
+}
+
+private function getStatutBadge(string $statut): array
+{
+    $badges = [
+        'VALIDEE' => ['class' => 'warning', 'text' => 'Préparation'],
+        'EN_COURS' => ['class' => 'info', 'text' => 'En cours'],
+        'PRETE' => ['class' => 'success', 'text' => 'En livraison']
+    ];
+    
+    return $badges[$statut] ?? ['class' => 'secondary', 'text' => $statut];
+}
+
+private function getTempsEcoule(string $dateCommande): string
+{
+    $diff = time() - strtotime($dateCommande);
+    $heures = floor($diff / 3600);
+    $minutes = floor(($diff % 3600) / 60);
+    
+    if ($heures > 0) {
+        return "{$heures}h{$minutes}min";
+    }
+    return "{$minutes}min";
+}
 }
