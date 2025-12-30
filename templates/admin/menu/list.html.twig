@@ -4,7 +4,6 @@
 {% block page_title %}Gestion des Menus{% endblock %}
 {% block page_subtitle %}Gérez vos formules et menus complets{% endblock %}
 
-
 {% block stylesheets %}
     {{ parent() }}
     <link rel="stylesheet" href="{{ asset('css/menu.css') }}">
@@ -14,17 +13,25 @@
 <div class="menu-management">
     <div class="menu-header">
         <div class="search-section">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Rechercher un menu..." id="menuSearch">
-            </div>
+            <form method="GET" action="{{ path('app_menu_list') }}" class="search-form">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" 
+                           name="search" 
+                           value="{{ search|default('') }}" 
+                           placeholder="Rechercher un menu..." 
+                           class="search-input">
+                </div>
+                <button type="submit" class="btn btn-primary">Rechercher</button>
+                {% if search %}
+                    <a href="{{ path('app_menu_list') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Effacer
+                    </a>
+                {% endif %}
+            </form>
         </div>
         
         <div class="header-actions">
-            <div class="filter-group">
-                <button class="filter-btn active">Tous les statuts</button>
-                <button class="filter-btn">Trier par</button>
-            </div>
             <button class="btn-add-menu">
                 <i class="fas fa-plus"></i>
                 Ajouter un menu
@@ -50,7 +57,11 @@
                             <div class="empty-content">
                                 <i class="fas fa-layer-group fa-3x text-muted mb-3"></i>
                                 <h4>Aucun menu trouvé</h4>
-                                <p class="text-muted">Les menus seront affichés ici une fois créés</p>
+                                {% if search %}
+                                    <p class="text-muted">Aucun résultat pour "{{ search }}"</p>
+                                {% else %}
+                                    <p class="text-muted">Les menus seront affichés ici une fois créés</p>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -118,16 +129,43 @@
     </div>
 </div>
 
-<!-- Modal élégant -->
 <div id="modalOverlay" class="modal-overlay">
     <div class="modal-container">
-        <div id="modalContent" class="modal-content">
-        </div>
+        <div id="modalContent" class="modal-content"></div>
     </div>
 </div>
 
 <style>
-/* Styles identiques à ceux du BurgerController */
+.search-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.search-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+    color: #333;
+    width: 100%;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background 0.3s;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    color: white;
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -362,7 +400,6 @@
     opacity: 0.3;
 }
 
-/* Notifications */
 .notification {
     position: fixed;
     top: 20px;
@@ -420,7 +457,6 @@
 {% block javascripts %}
     {{ parent() }}
     <script>
-        // Voir détails menu avec modal élégant
         async function voirDetailsMenu(menuId) {
             try {
                 const response = await fetch(`/admin/menu/details/${menuId}`);
@@ -517,7 +553,6 @@
             }
         }
 
-        // Toggle statut menu
         async function toggleStatutMenu(menuId, nomMenu, estArchive) {
             const action = estArchive ? 'activer' : 'archiver';
             const modalContent = `
@@ -543,7 +578,6 @@
             document.getElementById('modalOverlay').classList.add('active');
         }
 
-        // Confirmer toggle statut
         async function confirmerToggleStatut(menuId) {
             try {
                 const response = await fetch(`/admin/menu/toggle-statut/${menuId}`, {
@@ -565,7 +599,6 @@
             }
         }
 
-        // Supprimer menu avec confirmation élégante
         async function supprimerMenu(menuId, nomMenu) {
             const modalContent = `
                 <div class="modal-header danger">
@@ -590,7 +623,6 @@
             document.getElementById('modalOverlay').classList.add('active');
         }
 
-        // Confirmer suppression
         async function confirmerSuppressionMenu(menuId) {
             try {
                 const response = await fetch(`/admin/menu/delete/${menuId}`, {
@@ -612,12 +644,10 @@
             }
         }
 
-        // Fermer modal
         function fermerModal() {
             document.getElementById('modalOverlay').classList.remove('active');
         }
 
-        // Notifications toast
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
@@ -632,7 +662,6 @@
             }, 3000);
         }
 
-        // Fermer modal en cliquant sur l'overlay
         document.addEventListener('click', function(e) {
             if (e.target.id === 'modalOverlay') {
                 fermerModal();
