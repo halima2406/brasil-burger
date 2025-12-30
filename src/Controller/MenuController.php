@@ -52,4 +52,57 @@ class MenuController extends AbstractController
             return new Response("Erreur MenuController: " . $e->getMessage());
         }
     }
+
+    #[Route('/seed', name: 'app_complement_seed')]
+    public function seed(Connection $connection): Response
+    {
+        try {
+            $existants = $connection->fetchOne("
+                SELECT COUNT(*) FROM produit WHERE type_produit IN ('ACCOMPAGNEMENT', 'BOISSON')
+            ");
+            
+            if ($existants > 0) {
+                return new Response("
+                    <h1>✅ Compléments déjà présents</h1>
+                    <p><strong>$existants compléments</strong> trouvés dans la base.</p>
+                    <a href='/admin/menu/list'>Voir les menus</a>
+                ");
+            }
+            
+            $accompagnements = [
+                ['Frites Classiques', 800],
+                ['Frites Épicées', 1000],
+                ['Salade César', 1200],
+                ['Onion Rings', 1100]
+            ];
+            
+            foreach ($accompagnements as [$nom, $prix]) {
+                $connection->executeStatement("
+                    INSERT INTO produit (nom, prix, type_produit) VALUES (?, ?, 'ACCOMPAGNEMENT')
+                ", [$nom, $prix]);
+            }
+            
+            $boissons = [
+                ['Coca-Cola', 500],
+                ['Sprite', 500],
+                ['Jus d\'Orange', 700],
+                ['Eau Minérale', 300]
+            ];
+            
+            foreach ($boissons as [$nom, $prix]) {
+                $connection->executeStatement("
+                    INSERT INTO produit (nom, prix, type_produit) VALUES (?, ?, 'BOISSON')
+                ", [$nom, $prix]);
+            }
+            
+            return new Response("
+                <h1>🎉 Compléments créés avec succès !</h1>
+                <p>Accompagnements et boissons ajoutés pour les menus.</p>
+                <a href='/admin/menu/list'>Voir les menus</a>
+            ");
+            
+        } catch (\Exception $e) {
+            return new Response("Erreur: " . $e->getMessage());
+        }
+    }
 }
