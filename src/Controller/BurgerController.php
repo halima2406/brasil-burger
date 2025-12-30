@@ -16,13 +16,13 @@ class BurgerController extends AbstractController
     public function list(Request $request, Connection $connection): Response
     {
         try {
-            $search = $request->query->get('search', '');
+            $search = trim($request->query->get('search', ''));
 
             $whereCondition = "p.type_produit = 'BURGER'";
             $params = [];
 
             if (!empty($search)) {
-                $whereCondition .= " AND p.nom LIKE ?";
+                $whereCondition .= " AND LOWER(p.nom) LIKE LOWER(?)";
                 $params[] = '%' . $search . '%';
             }
 
@@ -55,51 +55,6 @@ class BurgerController extends AbstractController
             return new Response("Erreur BurgerController: " . $e->getMessage());
         }
     }
-
-     /*#[Route('/list', name: 'app_burger_list')]
-    public function list(Request $request, Connection $connection): Response
-    {
-        $page = max(1, (int) $request->query->get('page', 1));
-        $perPage = 10;
-        $offset = ($page - 1) * $perPage;
-
-        
-        $totalBurgers = $connection->fetchOne("
-            SELECT COUNT(*) FROM produit p WHERE p.type_produit = 'BURGER'
-        ") ?: 0;
-
-        $burgers = $connection->fetchAllAssociative("
-            SELECT p.id, p.nom, p.prix, p.type_produit,
-                   COALESCE(SUM(lc.quantite), 0) as ventes_totales,
-                   COALESCE(SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN lc.quantite ELSE 0 END), 0) as ventes_jour
-            FROM produit p 
-            LEFT JOIN ligne_commande lc ON p.id = lc.produit_id
-            LEFT JOIN commande c ON lc.commande_id = c.id AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
-            WHERE p.type_produit = 'BURGER'
-            GROUP BY p.id, p.nom, p.prix, p.type_produit
-            ORDER BY p.nom ASC
-            LIMIT $perPage OFFSET $offset
-        ");
-
-        foreach ($burgers as &$burger) {
-            $burger['prix_formate'] = number_format($burger['prix'], 0, ',', ' ');
-            $burger['disponible'] = $burger['prix'] > 0;
-            $burger['statut'] = $burger['disponible'] ? 'Actif' : 'Inactif';
-            $burger['archive'] = false; 
-        }
-
-        
-        $totalPages = ceil($totalBurgers / $perPage);
-        $pagination = [
-            'pageEnCours' => $page,
-            'nbrePage' => $totalPages,
-        ];
-
-        return $this->render('admin/burger/list.html.twig', array_merge([
-            'burgers' => $burgers
-        ], $pagination));
-    }*/
-
 
     #[Route('/details/{id}', name: 'app_burger_details', methods: ['GET'])]
     public function details(int $id, Connection $connection): JsonResponse
@@ -229,5 +184,3 @@ class BurgerController extends AbstractController
         return $descriptions[$nom] ?? 'Burger savoureux avec ingrédients frais et sauce maison';
     }
 }
-
-  
