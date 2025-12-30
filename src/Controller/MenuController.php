@@ -20,7 +20,6 @@ class MenuController extends AbstractController
             $perPage = 5;
             $offset = ($page - 1) * $perPage;
 
-        
             $totalMenus = $connection->fetchOne("
                 SELECT COUNT(*) FROM menu m 
                 WHERE m.est_archive = false OR m.est_archive IS NULL
@@ -37,17 +36,12 @@ class MenuController extends AbstractController
                     bo.prix as boisson_prix,
                     f.nom as frite_nom,
                     f.prix as frite_prix,
-                    COALESCE(b.prix, 0) + COALESCE(bo.prix, 0) + COALESCE(f.prix, 0) as prix_total,
-                    COALESCE(SUM(lc.quantite), 0) as ventes_totales,
-                    COALESCE(SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN lc.quantite ELSE 0 END), 0) as ventes_jour
+                    COALESCE(b.prix, 0) + COALESCE(bo.prix, 0) + COALESCE(f.prix, 0) as prix_total
                 FROM menu m
                 LEFT JOIN produit b ON m.burger_id = b.id
                 LEFT JOIN produit bo ON m.boisson_id = bo.id  
                 LEFT JOIN produit f ON m.frite_id = f.id
-                LEFT JOIN ligne_commande lc ON m.id = lc.produit_id
-                LEFT JOIN commande c ON lc.commande_id = c.id AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
                 WHERE m.est_archive = false OR m.est_archive IS NULL
-                GROUP BY m.id, m.nom, m.est_archive, b.nom, b.prix, bo.nom, bo.prix, f.nom, f.prix
                 ORDER BY m.nom ASC
                 LIMIT $perPage OFFSET $offset
             ");
@@ -57,13 +51,34 @@ class MenuController extends AbstractController
                 $menu['prix_formate'] = number_format($menu['prix'], 0, ',', ' ') . ' FCFA';
                 $menu['disponible'] = !$menu['est_archive'];
                 $menu['description'] = $this->getDescriptionMenu($menu['nom']);
-                $menu['ventes_totales'] = (int) $menu['ventes_totales'];
-                $menu['ventes_jour'] = (int) $menu['ventes_jour'];
+                
+                $stats = $connection->fetchAssociative("
+                    SELECT 
+                        COALESCE(SUM(lc.quantite), 0) as ventes_totales,
+                        COALESCE(SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN lc.quantite ELSE 0 END), 0) as ventes_jour
+                    FROM ligne_commande lc
+                    JOIN commande c ON lc.commande_id = c.id
+                    WHERE lc.produit_id = ? AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+                ", [$menu['id']]);
+                
+                if (!$stats || $stats['ventes_totales'] == 0) {
+                    $stats = $connection->fetchAssociative("
+                        SELECT 
+                            COALESCE(COUNT(lc.id), 0) as ventes_totales,
+                            COALESCE(SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN 1 ELSE 0 END), 0) as ventes_jour
+                        FROM ligne_commande lc
+                        JOIN commande c ON lc.commande_id = c.id
+                        JOIN produit p ON lc.produit_id = p.id
+                        WHERE p.nom LIKE ? AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+                    ", ['%' . $menu['nom'] . '%']);
+                }
+                
+                $menu['ventes_totales'] = (int) ($stats['ventes_totales'] ?? 0);
+                $menu['ventes_jour'] = (int) ($stats['ventes_jour'] ?? 0);
             }
 
             $stats = $this->getStatsMenus($connection);
-
-         
+            
             $totalPages = ceil($totalMenus / $perPage);
             $pagination = [
                 'pageEnCours' => $page,
@@ -91,27 +106,43 @@ class MenuController extends AbstractController
                     b.nom as burger_nom, b.prix as burger_prix,
                     bo.nom as boisson_nom, bo.prix as boisson_prix,
                     f.nom as frite_nom, f.prix as frite_prix,
-                    COALESCE(b.prix, 0) + COALESCE(bo.prix, 0) + COALESCE(f.prix, 0) as prix_total,
-                    COALESCE(SUM(lc.quantite), 0) as ventes_totales,
-                    COALESCE(SUM(lc.montant_total), 0) as chiffre_affaires,
-                    COALESCE(SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN lc.quantite ELSE 0 END), 0) as ventes_jour
+                    COALESCE(b.prix, 0) + COALESCE(bo.prix, 0) + COALESCE(f.prix, 0) as prix_total
                 FROM menu m
                 LEFT JOIN produit b ON m.burger_id = b.id
                 LEFT JOIN produit bo ON m.boisson_id = bo.id  
                 LEFT JOIN produit f ON m.frite_id = f.id
-                LEFT JOIN ligne_commande lc ON m.id = lc.produit_id
-                LEFT JOIN commande c ON lc.commande_id = c.id AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
                 WHERE m.id = ?
-                GROUP BY m.id, m.nom, m.est_archive, b.nom, b.prix, bo.nom, bo.prix, f.nom, f.prix
             ", [$id]);
 
             if (!$menu) {
                 return $this->json(['error' => 'Menu non trouvé'], 404);
             }
 
-           
+            $statsVentes = $connection->fetchAssociative("
+                SELECT 
+                    COALESCE(SUM(lc.quantite), 0) as ventes_totales,
+                    COALESCE(SUM(lc.montant_total), 0) as chiffre_affaires,
+                    COALESCE(SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN lc.quantite ELSE 0 END), 0) as ventes_jour
+                FROM ligne_commande lc
+                JOIN commande c ON lc.commande_id = c.id
+                WHERE lc.produit_id = ? AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+            ", [$id]);
+
+            if (!$statsVentes || $statsVentes['ventes_totales'] == 0) {
+                $statsVentes = $connection->fetchAssociative("
+                    SELECT 
+                        COALESCE(COUNT(lc.id), 0) as ventes_totales,
+                        COALESCE(SUM(lc.montant_total), 0) as chiffre_affaires,
+                        COALESCE(SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN 1 ELSE 0 END), 0) as ventes_jour
+                    FROM ligne_commande lc
+                    JOIN commande c ON lc.commande_id = c.id
+                    JOIN produit p ON lc.produit_id = p.id
+                    WHERE p.nom LIKE ? AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+                ", ['%' . $menu['nom'] . '%']);
+            }
+
             $commandes = $connection->fetchAllAssociative("
-                SELECT c.date_commande, lc.quantite, lc.montant_total
+                SELECT c.date_commande, lc.quantite, lc.montant_total, c.id as commande_id
                 FROM ligne_commande lc
                 JOIN commande c ON lc.commande_id = c.id
                 WHERE lc.produit_id = ? AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
@@ -119,11 +150,22 @@ class MenuController extends AbstractController
                 LIMIT 10
             ", [$id]);
 
-          
+            if (empty($commandes)) {
+                $commandes = $connection->fetchAllAssociative("
+                    SELECT c.date_commande, lc.quantite, lc.montant_total, c.id as commande_id
+                    FROM ligne_commande lc
+                    JOIN commande c ON lc.commande_id = c.id
+                    JOIN produit p ON lc.produit_id = p.id
+                    WHERE p.nom LIKE ? AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+                    ORDER BY c.date_commande DESC
+                    LIMIT 10
+                ", ['%' . $menu['nom'] . '%']);
+            }
+
             $menu['prix_formate'] = number_format($menu['prix_total'], 0, ',', ' ');
-            $menu['chiffre_affaires_formate'] = number_format($menu['chiffre_affaires'], 0, ',', ' ');
-            $menu['ventes_totales'] = (int) $menu['ventes_totales'];
-            $menu['ventes_jour'] = (int) $menu['ventes_jour'];
+            $menu['chiffre_affaires_formate'] = number_format($statsVentes['chiffre_affaires'] ?? 0, 0, ',', ' ');
+            $menu['ventes_totales'] = (int) ($statsVentes['ventes_totales'] ?? 0);
+            $menu['ventes_jour'] = (int) ($statsVentes['ventes_jour'] ?? 0);
 
             foreach ($commandes as &$commande) {
                 $commande['date_formate'] = date('d/m/Y H:i', strtotime($commande['date_commande']));
@@ -137,7 +179,7 @@ class MenuController extends AbstractController
             ]);
 
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Erreur lors du chargement des détails'], 500);
+            return $this->json(['error' => 'Erreur lors du chargement des détails: ' . $e->getMessage()], 500);
         }
     }
 
@@ -217,7 +259,6 @@ class MenuController extends AbstractController
         return $descriptions[$nom] ?? 'Menu complet Brasil Burger avec burger, accompagnement et boisson';
     }
 
-   
     #[Route('/seed', name: 'app_complement_seed')]
     public function seed(Connection $connection): Response
     {
