@@ -18,18 +18,46 @@ class LivraisonController extends AbstractController
     public function list(Connection $connection): Response
     {
         try {
+            $stats = $this->getStatsLivraisons($connection);
+            
             $commandesEnAttente = $connection->fetchAllAssociative("
                 SELECT 
                     c.id,
                     'CMD' || c.id as numero_commande,
                     c.date_commande,
                     c.montant_total as total,
-                    'Client' as client_nom
+                    'Client' as client_nom,
+                    'Adresse livraison' as adresse_livraison,
+                    'Téléphone client' as telephone_client,
+                    z.quartier,
+                    z.prix as prix_livraison
                 FROM commande c
+                LEFT JOIN zone z ON c.zone_id = z.id
                 WHERE c.statut IN ('VALIDEE', 'EN_COURS') 
                 AND c.livreur_id IS NULL
                 ORDER BY c.date_commande ASC
                 LIMIT 5
+            ");
+
+            $livraisonsEnCours = $connection->fetchAllAssociative("
+                SELECT 
+                    c.id,
+                    'CMD' || c.id as numero_commande,
+                    c.date_commande,
+                    c.montant_total as total,
+                    'Adresse livraison' as adresse_livraison,
+                    'Client' as client_nom,
+                    l.nom as livreur_nom,
+                    l.telephone as livreur_tel,
+                    z.quartier,
+                    'ASSIGNEE' as statut_livraison
+                FROM commande c
+                LEFT JOIN livreur l ON c.livreur_id = l.id
+                LEFT JOIN zone z ON c.zone_id = z.id
+                WHERE c.livreur_id IS NOT NULL 
+                AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE')
+                ORDER BY c.date_commande DESC
+                LIMIT 10
             ");
 
             $livreurs = $connection->fetchAllAssociative("
@@ -39,14 +67,34 @@ class LivraisonController extends AbstractController
                 ORDER BY nom ASC
             ");
 
+            $zones = $connection->fetchAllAssociative("
+                SELECT id, quartier 
+                FROM zone 
+                WHERE est_archive = false 
+                ORDER BY quartier ASC
+            ");
+
             foreach ($commandesEnAttente as &$commande) {
                 $commande['total_formate'] = number_format($commande['total'], 0, ',', ' ') . ' FCFA';
+                $commande['prix_livraison_formate'] = number_format($commande['prix_livraison'] ?? 0, 0, ',', ' ') . ' FCFA';
                 $commande['date_formate'] = date('d/m/Y H:i', strtotime($commande['date_commande']));
+                $commande['priorite'] = $this->getPriorite($commande['date_commande']);
+                $commande['nb_produits'] = 1;
+            }
+
+            foreach ($livraisonsEnCours as &$livraison) {
+                $livraison['total_formate'] = number_format($livraison['total'], 0, ',', ' ') . ' FCFA';
+                $livraison['date_formate'] = date('d/m/Y H:i', strtotime($livraison['date_commande']));
+                $livraison['statut_couleur'] = $this->getStatutCouleur($livraison['statut_livraison']);
+                $livraison['nb_produits'] = 1;
             }
 
             return $this->render('admin/livraison/list.html.twig', [
+                'stats' => $stats,
                 'commandesEnAttente' => $commandesEnAttente,
+                'livraisonsEnCours' => $livraisonsEnCours,
                 'livreurs' => $livreurs,
+                'zones' => $zones,
                 'database_ready' => true
             ]);
 
@@ -74,9 +122,12 @@ class LivraisonController extends AbstractController
                     c.montant_total as total,
                     'Adresse livraison' as adresse_livraison,
                     'Téléphone client' as telephone_client,
+                    'Note commande' as note_commande,
                     'Client' as client_nom,
+                    z.id as zone_id,
                     z.quartier,
-                    z.prix as prix_livraison
+                    z.prix as prix_livraison,
+                    1 as nb_produits
                 FROM commande c
                 LEFT JOIN zone z ON c.zone_id = z.id
                 WHERE c.statut IN ('VALIDEE', 'EN_COURS') 
@@ -112,8 +163,9 @@ class LivraisonController extends AbstractController
             foreach ($commandes as &$commande) {
                 $commande['total_formate'] = number_format($commande['total'], 0, ',', ' ') . ' FCFA';
                 $commande['prix_livraison_formate'] = number_format($commande['prix_livraison'] ?? 0, 0, ',', ' ') . ' FCFA';
+                $commande['total_avec_livraison'] = number_format($commande['total'] + ($commande['prix_livraison'] ?? 0), 0, ',', ' ') . ' FCFA';
                 $commande['date_formate'] = date('d/m/Y H:i', strtotime($commande['date_commande']));
-                $commande['nb_produits'] = 1;
+                $commande['priorite'] = $this->getPriorite($commande['date_commande']);
             }
 
             return $this->render('admin/livraison/assignation.html.twig', [
@@ -248,6 +300,8 @@ class LivraisonController extends AbstractController
                 $livraison['total_formate'] = number_format($livraison['total'], 0, ',', ' ') . ' FCFA';
                 $livraison['prix_livraison_formate'] = number_format($livraison['prix_livraison'] ?? 0, 0, ',', ' ') . ' FCFA';
                 $livraison['date_formate'] = date('d/m/Y H:i', strtotime($livraison['date_commande']));
+                $livraison['statut_couleur'] = $this->getStatutCouleur($livraison['statut_livraison']);
+                $livraison['duree'] = $this->getDureeLivraison($livraison['date_commande']);
             }
 
             return $this->render('admin/livraison/suivi.html.twig', [
@@ -362,6 +416,109 @@ class LivraisonController extends AbstractController
 
         } catch (\Exception $e) {
             return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getStatsLivraisons(Connection $connection): array
+    {
+        try {
+            $stats = [];
+
+            $stats['en_attente'] = (int) $connection->fetchOne("
+                SELECT COUNT(*) 
+                FROM commande 
+                WHERE statut IN ('VALIDEE', 'EN_COURS') 
+                AND livreur_id IS NULL
+            ") ?: 0;
+
+            $stats['en_cours'] = (int) $connection->fetchOne("
+                SELECT COUNT(*) 
+                FROM commande 
+                WHERE livreur_id IS NOT NULL 
+                AND statut NOT IN ('TERMINEE')
+            ") ?: 0;
+
+            $stats['livrees_aujourd_hui'] = (int) $connection->fetchOne("
+                SELECT COUNT(*) 
+                FROM commande 
+                WHERE statut = 'TERMINEE'
+                AND DATE(date_commande) = CURRENT_DATE
+            ") ?: 0;
+
+            $stats['problemes'] = (int) $connection->fetchOne("
+                SELECT COUNT(*) 
+                FROM commande 
+                WHERE statut_livraison = 'PROBLEME'
+            ") ?: 0;
+
+            $caLivraisons = $connection->fetchOne("
+                SELECT COALESCE(SUM(z.prix), 0)
+                FROM commande c
+                LEFT JOIN zone z ON c.zone_id = z.id
+                WHERE c.statut = 'TERMINEE'
+                AND DATE(c.date_commande) = CURRENT_DATE
+            ");
+            $stats['ca_livraisons_jour'] = number_format($caLivraisons ?: 0, 0, ',', ' ') . ' FCFA';
+
+            $livreurActif = $connection->fetchAssociative("
+                SELECT l.nom, COUNT(*) as nb_livraisons
+                FROM commande c
+                LEFT JOIN livreur l ON c.livreur_id = l.id
+                WHERE c.statut = 'TERMINEE'
+                AND DATE(c.date_commande) = CURRENT_DATE
+                AND l.nom IS NOT NULL
+                GROUP BY l.id, l.nom
+                ORDER BY nb_livraisons DESC
+                LIMIT 1
+            ");
+
+            $stats['livreur_actif'] = $livreurActif ? 
+                $livreurActif['nom'] . ' (' . $livreurActif['nb_livraisons'] . ' livraisons)' : 
+                'Aucun';
+
+            return $stats;
+
+        } catch (\Exception $e) {
+            return [
+                'en_attente' => 0,
+                'en_cours' => 0,
+                'livrees_aujourd_hui' => 0,
+                'problemes' => 0,
+                'ca_livraisons_jour' => '0 FCFA',
+                'livreur_actif' => 'Erreur'
+            ];
+        }
+    }
+
+    public function getStatutCouleur(string $statut): string
+    {
+        return match($statut) {
+            'ASSIGNEE' => 'info',
+            'EN_ROUTE' => 'warning',
+            'LIVREE' => 'success',
+            'PROBLEME' => 'danger',
+            default => 'secondary'
+        };
+    }
+
+    public function getPriorite(string $dateCommande): string
+    {
+        $heures = (time() - strtotime($dateCommande)) / 3600;
+        
+        if ($heures > 2) return 'urgent';
+        if ($heures > 1) return 'normale';
+        return 'recente';
+    }
+
+    public function getDureeLivraison(string $dateCommande): string
+    {
+        $minutes = (time() - strtotime($dateCommande)) / 60;
+        
+        if ($minutes < 60) {
+            return floor($minutes) . ' min';
+        } else {
+            $heures = floor($minutes / 60);
+            return $heures . 'h' . floor($minutes % 60) . 'm';
         }
     }
 }
