@@ -84,4 +84,41 @@ class CommandeController extends AbstractController
             return $this->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    #[Route('/statut/{id}', name: 'app_commande_change_statut', methods: ['POST'])]
+    public function changeStatut(int $id, Request $request, Connection $connection): JsonResponse
+    {
+        try {
+            $nouveauStatut = $request->request->get('statut');
+            
+            $statutsAutorises = ['EN_COURS', 'PRETE', 'EN_LIVRAISON', 'LIVREE', 'TERMINEE'];
+            
+            if (!in_array($nouveauStatut, $statutsAutorises)) {
+                return $this->json(['error' => 'Statut non autorisé'], 400);
+            }
+
+            $commande = $connection->fetchAssociative("
+                SELECT id FROM commande WHERE id = ?
+            ", [$id]);
+
+            if (!$commande) {
+                return $this->json(['error' => 'Commande non trouvée'], 404);
+            }
+
+            $connection->executeStatement("
+                UPDATE commande 
+                SET statut = ? 
+                WHERE id = ?
+            ", [$nouveauStatut, $id]);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Statut mis à jour avec succès',
+                'nouveau_statut' => $nouveauStatut
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }
