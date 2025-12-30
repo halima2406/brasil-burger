@@ -15,10 +15,11 @@ class StatistiqueController extends AbstractController
         try {
             $statsJour = $this->getStatistiquesJournalieres($connection);
             $topVentes = $this->getTopBurgersMenusJour($connection);
+            $recettesJour = $this->getRecettesJournalieres($connection);
             
             $data = [
                 'topVentes' => $topVentes,
-                'recettesJouralieres' => ['burgers' => 0, 'menus' => 0, 'frites' => 0, 'boissons' => 0, 'total' => 0],
+                'recettesJouralieres' => $recettesJour,
                 'commandesValidees' => [],
                 'commandesAnnulees' => [],
                 'totalVentes' => $statsJour['commandes_validees'],
@@ -99,6 +100,56 @@ class StatistiqueController extends AbstractController
         }
         
         return $topVentes;
+    }
+
+    private function getRecettesJournalieres(Connection $connection): array
+    {
+        $aujourdhui = date('Y-m-d');
+        $recettes = ['burgers' => 0, 'menus' => 0, 'frites' => 0, 'boissons' => 0, 'total' => 0];
+        
+       
+        $resultsProduits = $connection->fetchAllAssociative("
+            SELECT 
+                p.type_produit,
+                SUM(lc.prix_unitaire * lc.quantite) as recette
+            FROM ligne_commande lc
+            JOIN produit p ON lc.produit_id = p.id  
+            JOIN commande c ON lc.commande_id = c.id
+            WHERE DATE(c.date_commande) = ?
+                AND c.statut IN ('VALIDEE', 'EN_COURS', 'TERMINEE')
+                AND lc.produit_id IS NOT NULL
+            GROUP BY p.type_produit
+        ", [$aujourdhui]);
+        
+        foreach ($resultsProduits as $result) {
+            $montant = (int) $result['recette'];
+            switch (strtoupper($result['type_produit'])) {
+                case 'BURGER':
+                    $recettes['burgers'] = $montant;
+                    break;
+                case 'FRITE':
+                    $recettes['frites'] = $montant;
+                    break;
+                case 'BOISSON':
+                    $recettes['boissons'] = $montant;
+                    break;
+            }
+        }
+        
+        
+        $recetteMenus = $connection->fetchOne("
+            SELECT SUM(lc.prix_unitaire * lc.quantite) as recette_menus
+            FROM ligne_commande lc
+            JOIN commande c ON lc.commande_id = c.id
+            WHERE DATE(c.date_commande) = ?
+                AND c.statut IN ('VALIDEE', 'EN_COURS', 'TERMINEE')
+                AND lc.menu_id IS NOT NULL
+        ", [$aujourdhui]);
+        
+        $recettes['menus'] = (int) ($recetteMenus ?: 0);
+        $recettes['total'] = $recettes['burgers'] + $recettes['menus'] + $recettes['frites'] + $recettes['boissons'];
+        
+        return $recettes;
     }
 
     private function getClasseRang(int $rang): string
