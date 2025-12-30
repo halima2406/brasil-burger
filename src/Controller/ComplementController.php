@@ -12,7 +12,7 @@ use Doctrine\DBAL\Connection;
 #[Route('/admin/complement')]
 class ComplementController extends AbstractController
 {
-    #[Route('/list', name: 'app_complement_list')]
+    /*#[Route('/list', name: 'app_complement_list')]
     public function list(Request $request, Connection $connection): Response
     {
         try {
@@ -71,6 +71,96 @@ class ComplementController extends AbstractController
             return $this->render('admin/complement/list.html.twig', [
                 'complements' => $complements,
                 'filter' => $filter,
+                'stats' => $stats,
+                'totalComplements' => $totalItems,
+                'pageEnCours' => $page,
+                'nbrePage' => $totalPages,
+                'pagination' => [
+                    'current_page' => $page,
+                    'total_pages' => $totalPages,
+                    'total_items' => $totalItems,
+                    'per_page' => $perPage,
+                    'has_previous' => $page > 1,
+                    'has_next' => $page < $totalPages,
+                    'previous_page' => $page > 1 ? $page - 1 : null,
+                    'next_page' => $page < $totalPages ? $page + 1 : null,
+                    'pages' => range(1, $totalPages)
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return new Response("Erreur ComplementController: " . $e->getMessage());
+        }
+    }*/
+
+
+    #[Route('/list', name: 'app_complement_list')]
+    public function list(Request $request, Connection $connection): Response
+    {
+        try {
+            $filter = $request->query->get('filter', 'tous');
+            $search = trim($request->query->get('search', ''));
+            $page = max(1, (int) $request->query->get('page', 1));
+            $perPage = 5;
+            $offset = ($page - 1) * $perPage;
+            
+            $whereCondition = $this->getWhereConditionForFilter($filter);
+            $params = [];
+            
+            if (!empty($search)) {
+                $whereCondition = "($whereCondition) AND LOWER(p.nom) LIKE LOWER(?)";
+                $params[] = '%' . $search . '%';
+            }
+            
+            $totalItems = $connection->fetchOne("
+                SELECT COUNT(*) FROM produit p WHERE $whereCondition
+            ", $params) ?: 0;
+            
+            $complements = $connection->fetchAllAssociative("
+                SELECT 
+                    p.id,
+                    p.nom,
+                    p.prix,
+                    p.type_produit,
+                    p.type_complement,
+                    COUNT(lc.id) as ventes_totales
+                FROM produit p
+                LEFT JOIN ligne_commande lc ON p.id = lc.produit_id
+                LEFT JOIN commande c ON lc.commande_id = c.id AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+                WHERE $whereCondition
+                GROUP BY p.id, p.nom, p.prix, p.type_produit, p.type_complement
+                ORDER BY p.nom ASC
+                LIMIT $perPage OFFSET $offset
+            ", $params);
+
+            foreach ($complements as &$complement) {
+                $complement['prix_formate'] = number_format($complement['prix'], 0, ',', ' ') . ' FCFA';
+                $complement['disponible'] = $complement['prix'] > 0;
+                $complement['description'] = $this->getDescription($complement['nom'], $complement['type_complement'] ?: $complement['type_produit']);
+                $complement['image_url'] = $this->getImageUrl($complement['nom'], $complement['type_complement'] ?: $complement['type_produit']);
+                $complement['popularite'] = $this->getPopularite((int) $complement['ventes_totales']);
+                
+                $typeAffichage = $complement['type_complement'] ?: $complement['type_produit'];
+                switch ($typeAffichage) {
+                    case 'FRITE':
+                        $complement['categorie'] = 'frite';
+                        break;
+                    case 'BOISSON':
+                        $complement['categorie'] = 'boisson';
+                        break;
+                    default:
+                        $complement['categorie'] = 'accompagnement';
+                }
+            }
+
+            $stats = $this->getStatsComplements($connection);
+            
+            $totalPages = ceil($totalItems / $perPage);
+            
+            return $this->render('admin/complement/list.html.twig', [
+                'complements' => $complements,
+                'filter' => $filter,
+                'search' => $search,  
                 'stats' => $stats,
                 'totalComplements' => $totalItems,
                 'pageEnCours' => $page,
