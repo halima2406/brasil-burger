@@ -1,0 +1,159 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Assignation Livraisons - Brasil Burger{% endblock %}
+{% block page_title %}Assignation des Livraisons{% endblock %}
+{% block page_subtitle %}Assigner les commandes aux livreurs{% endblock %}
+
+{% block body %}
+    <div class="assignation-container">
+        <div class="filters-section">
+            <div class="filter-group">
+                <a href="{{ path('app_livraison_assignation', {zone: 'all'}) }}" 
+                   class="filter-btn {{ zoneFilter == 'all' ? 'active' : '' }}">
+                    Toutes zones
+                </a>
+                {% for zone in zones %}
+                    <a href="{{ path('app_livraison_assignation', {zone: zone.id}) }}" 
+                       class="filter-btn {{ zoneFilter == zone.id ? 'active' : '' }}">
+                        {{ zone.quartier }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="commandes-container">
+            {% if commandes is empty %}
+                <div class="empty-state">
+                    <i class="fas fa-box-open fa-3x mb-3"></i>
+                    <h4>Aucune commande à assigner</h4>
+                    <p>Les nouvelles commandes apparaîtront ici</p>
+                </div>
+            {% else %}
+                <div class="commandes-grid">
+                    {% for commande in commandes %}
+                    <div class="commande-card">
+                        <div class="card-header">
+                            <h3>#CMD{{ commande.numero_commande }}</h3>
+                            <span class="priorite-badge {{ commande.priorite }}">{{ commande.priorite|upper }}</span>
+                        </div>
+                        
+                        <div class="card-body">
+                            <div class="commande-info">
+                                <p><strong>Client:</strong> {{ commande.client_nom }}</p>
+                                <p><strong>Total:</strong> {{ commande.total_avec_livraison }}</p>
+                                <p><strong>Zone:</strong> {{ commande.quartier }}</p>
+                                <p><strong>Date:</strong> {{ commande.date_formate }}</p>
+                                <p><strong>Téléphone:</strong> {{ commande.telephone_client }}</p>
+                                <p><strong>Adresse:</strong> {{ commande.adresse_livraison }}</p>
+                            </div>
+                            
+                            <div class="assignation-form">
+                                <select id="livreur-{{ commande.id }}" class="livreur-select">
+                                    <option value="">Choisir un livreur</option>
+                                    {% for livreur in livreurs %}
+                                        <option value="{{ livreur.id }}">{{ livreur.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <button class="btn-assigner" onclick="assignerCommande({{ commande.id }})">
+                                    <i class="fas fa-user-check"></i> Assigner
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        async function assignerCommande(commandeId) {
+            const livreurSelect = document.getElementById('livreur-' + commandeId);
+            const livreurId = livreurSelect.value;
+            
+            if (!livreurId) {
+                showNotification('Veuillez sélectionner un livreur', 'error');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('livreur_id', livreurId);
+                
+                const response = await fetch(`/admin/livraison/assigner/${commandeId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showNotification('Erreur: ' + data.error, 'error');
+                }
+                
+            } catch (error) {
+                showNotification('Erreur lors de l\'assignation', 'error');
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+    </script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .assignation-container { padding: 20px; }
+        .filters-section { margin-bottom: 30px; }
+        .filter-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .filter-btn { padding: 10px 20px; background: white; border: 2px solid #e9ecef; border-radius: 8px; color: #495057; text-decoration: none; font-weight: 600; transition: all 0.3s; }
+        .filter-btn:hover, .filter-btn.active { background: #2e7d32; color: white; border-color: #2e7d32; text-decoration: none; }
+        .commandes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .commande-card { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #f8f9fa; border-bottom: 1px solid #dee2e6; }
+        .card-header h3 { margin: 0; color: #2e7d32; font-weight: 700; }
+        .priorite-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .priorite-badge.urgent { background: #dc3545; color: white; }
+        .priorite-badge.normale { background: #ffc107; color: black; }
+        .priorite-badge.recente { background: #28a745; color: white; }
+        .card-body { padding: 20px; }
+        .commande-info p { margin: 8px 0; color: #495057; }
+        .assignation-form { display: flex; gap: 10px; margin-top: 20px; }
+        .livreur-select { flex: 1; padding: 10px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; }
+        .livreur-select:focus { outline: none; border-color: #2e7d32; }
+        .btn-assigner { background: #2e7d32; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 8px; }
+        .btn-assigner:hover { background: #1b5e20; transform: translateY(-2px); }
+        .empty-state { text-align: center; padding: 60px 20px; color: #6c757d; }
+        .notification { position: fixed; top: 20px; right: 20px; background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-left: 4px solid #2e7d32; transform: translateX(100%); opacity: 0; transition: all 0.3s; z-index: 2000; }
+        .notification.show { transform: translateX(0); opacity: 1; }
+        .notification.error { border-left-color: #dc3545; }
+        .notification i { margin-right: 8px; }
+    </style>
+{% endblock %}

@@ -151,7 +151,7 @@
                 {% for commande in commandesEnAttente %}
                 <div class="commande-card" data-zone="{{ commande.zone_id|default('') }}" data-commande-id="{{ commande.id }}">
                     <div class="commande-header">
-                        <span class="numero">#{{ commande.numero_commande }}</span>
+                        <span class="numero">#CMD{{ commande.numero_commande }}</span>
                         <span class="date">{{ commande.date_formate }}</span>
                         <span class="priorite {{ commande.priorite|default('normale') }}">
                             {% if commande.priorite|default('normale') == 'urgent' %}
@@ -165,20 +165,20 @@
                     </div>
                     
                     <div class="commande-client">
-                        <h4>{{ commande.client_nom|default('Client') }}</h4>
-                        <p>{{ commande.telephone_client|default('Téléphone non disponible') }}</p>
+                        <h4>{{ commande.client_nom }}</h4>
+                        <p>{{ commande.telephone_client }}</p>
                     </div>
                     
                     <div class="commande-adresse">
                         <i class="fas fa-map-marker-alt"></i>
-                        {{ commande.adresse_livraison|default('Adresse non disponible') }}
+                        {{ commande.adresse_livraison }}
                     </div>
                     
                     <div class="commande-footer">
-                        <div class="zone-badge">{{ commande.quartier|default('Zone inconnue') }}</div>
+                        <div class="zone-badge">{{ commande.quartier }}</div>
                         <div class="prix-info">
                             <span class="prix-principal">{{ commande.total_formate }}</span>
-                            <span class="prix-livraison">+ {{ commande.prix_livraison_formate|default('0 FCFA') }}</span>
+                            <span class="prix-livraison">+ {{ commande.prix_livraison_formate }}</span>
                         </div>
                     </div>
                     
@@ -186,7 +186,7 @@
                         <button class="btn-details" onclick="voirDetails({{ commande.id }})">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="btn-assign" onclick="assignerCommande({{ commande.id }})">
+                        <button class="btn-assign" onclick="showAssignModal({{ commande.id }})">
                             <i class="fas fa-motorcycle"></i>
                             Assigner
                         </button>
@@ -201,7 +201,7 @@
     <div class="livraisons-section">
         <div class="section-header">
             <h2>Livraisons en cours</h2>
-            <a href="{{ path('app_livraison_suivi') }}" class="btn-suivi">
+           <a href="{{ path('app_livraison_suivi') }}" class="btn-suivi">
                 <i class="fas fa-map"></i>
                 Suivi complet
             </a>
@@ -211,10 +211,10 @@
             {% for livraison in livraisonsEnCours %}
             <div class="livraison-card">
                 <div class="livraison-header">
-                    <span class="numero">#{{ livraison.numero_commande }}</span>
+                    <span class="numero">#CMD{{ livraison.numero_commande }}</span>
                     <span class="statut {{ livraison.statut_couleur|default('info') }}">
                         <i class="fas fa-motorcycle"></i>
-                        {{ livraison.statut_livraison|default('ASSIGNEE') }}
+                        ASSIGNEE
                     </span>
                 </div>
                 
@@ -228,7 +228,7 @@
                 
                 <div class="livraison-info">
                     <p><strong>{{ livraison.client_nom }}</strong></p>
-                    <p>{{ livraison.quartier|default('Zone inconnue') }}</p>
+                    <p>{{ livraison.quartier }}</p>
                     <span class="prix">{{ livraison.total_formate }}</span>
                 </div>
             </div>
@@ -237,6 +237,7 @@
     </div>
     {% endif %}
 
+    <!-- Modal Détails -->
     <div id="modalDetails" class="modal-overlay">
         <div class="modal">
             <div class="modal-header">
@@ -248,6 +249,34 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Assignation -->
+    <div id="modalAssign" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="assignTitle">Assigner un livreur</h3>
+                <button class="modal-close" onclick="fermerModalAssign()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="assign-form">
+                    <label for="selectLivreur">Choisir un livreur :</label>
+                    <select id="selectLivreur" class="form-control">
+                        <option value="">-- Sélectionner un livreur --</option>
+                        {% for livreur in livreurs %}
+                            <option value="{{ livreur.id }}">{{ livreur.nom }}</option>
+                        {% endfor %}
+                    </select>
+                    
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="fermerModalAssign()">Annuler</button>
+                        <button class="btn btn-primary" onclick="confirmerAssignation()">
+                            <i class="fas fa-check"></i> Confirmer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block javascripts %}
@@ -255,6 +284,7 @@
     <script>
         let selectedLivreur = null;
         let selectedLivreurId = null;
+        let currentCommandeId = null;
 
         function selectLivreur(card) {
             document.querySelectorAll('.livreur-card').forEach(c => {
@@ -284,17 +314,25 @@
             });
         }
 
-        async function assignerCommande(commandeId) {
-            if (!selectedLivreurId) {
-                alert('Veuillez sélectionner un livreur');
+        function showAssignModal(commandeId) {
+            currentCommandeId = commandeId;
+            document.getElementById('selectLivreur').value = '';
+            document.getElementById('modalAssign').classList.add('active');
+        }
+
+        async function confirmerAssignation() {
+            const livreurId = document.getElementById('selectLivreur').value;
+            
+            if (!livreurId) {
+                showNotification('Veuillez sélectionner un livreur', 'error');
                 return;
             }
 
             try {
                 const formData = new FormData();
-                formData.append('livreur_id', selectedLivreurId);
+                formData.append('livreur_id', livreurId);
 
-                const response = await fetch(`{{ path('app_livraison_assigner', {commandeId: 'PLACEHOLDER'}) }}`.replace('PLACEHOLDER', commandeId), {
+                const response = await fetch(`{{ path('app_livraison_assigner', {commandeId: 'PLACEHOLDER'}) }}`.replace('PLACEHOLDER', currentCommandeId), {
                     method: 'POST',
                     body: formData
                 });
@@ -302,14 +340,15 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert(data.message);
-                    location.reload();
+                    showNotification(data.message, 'success');
+                    fermerModalAssign();
+                    setTimeout(() => location.reload(), 1500);
                 } else {
-                    alert('Erreur: ' + data.error);
+                    showNotification('Erreur: ' + data.error, 'error');
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                alert('Erreur lors de l\'assignation');
+                showNotification('Erreur lors de l\'assignation', 'error');
             }
         }
 
@@ -325,39 +364,39 @@
                 const response = await fetch(`{{ path('app_livraison_details', {commandeId: 'PLACEHOLDER'}) }}`.replace('PLACEHOLDER', commandeId));
                 const data = await response.json();
                 
-                if (data.error) {
+                if (data.success) {
+                    title.textContent = `Détails CMD${data.commande.numero_commande}`;
+                    content.innerHTML = `
+                        <div class="commande-details">
+                            <div class="detail-section">
+                                <h4>Informations client</h4>
+                                <p><strong>Client:</strong> ${data.commande.client_nom}</p>
+                                <p><strong>Téléphone:</strong> ${data.commande.telephone_client}</p>
+                                <p><strong>Adresse:</strong> ${data.commande.adresse_livraison}</p>
+                                <p><strong>Zone:</strong> ${data.commande.quartier}</p>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Produits commandés</h4>
+                                ${data.produits.map(p => `
+                                    <div class="produit-detail">
+                                        <span>${p.nom} x${p.quantite}</span>
+                                        <span>${p.sous_total_formate}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Total</h4>
+                                <p><strong>Commande:</strong> ${data.commande.total_formate}</p>
+                                <p><strong>Livraison:</strong> ${data.commande.prix_livraison_formate}</p>
+                                <p><strong>Total final:</strong> ${data.commande.total_final}</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
                     content.innerHTML = `<div class="error">Erreur: ${data.error}</div>`;
-                    return;
                 }
-                
-                title.textContent = `Détails de ${data.commande.numero_commande}`;
-                content.innerHTML = `
-                    <div class="commande-details">
-                        <div class="detail-section">
-                            <h4>Informations client</h4>
-                            <p><strong>Client:</strong> ${data.commande.client_nom}</p>
-                            <p><strong>Téléphone:</strong> ${data.commande.telephone_client}</p>
-                            <p><strong>Adresse:</strong> ${data.commande.adresse_livraison}</p>
-                        </div>
-                        
-                        <div class="detail-section">
-                            <h4>Produits commandés</h4>
-                            ${data.produits.map(p => `
-                                <div class="produit-detail">
-                                    <span>${p.nom} x${p.quantite}</span>
-                                    <span>${p.sous_total_formate}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                        
-                        <div class="detail-section">
-                            <h4>Total</h4>
-                            <p><strong>Commande:</strong> ${data.commande.total_formate}</p>
-                            <p><strong>Livraison:</strong> ${data.commande.prix_livraison_formate}</p>
-                            <p><strong>Total final:</strong> ${data.commande.total_final}</p>
-                        </div>
-                    </div>
-                `;
                 
             } catch (error) {
                 console.error('Erreur:', error);
@@ -369,10 +408,72 @@
             document.getElementById('modalDetails').classList.remove('active');
         }
 
+        function fermerModalAssign() {
+            document.getElementById('modalAssign').classList.remove('active');
+            currentCommandeId = null;
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Fermer modals en cliquant à l'extérieur
         document.getElementById('modalDetails').addEventListener('click', function(e) {
-            if (e.target === this) {
-                fermerModal();
-            }
+            if (e.target === this) fermerModal();
+        });
+
+        document.getElementById('modalAssign').addEventListener('click', function(e) {
+            if (e.target === this) fermerModalAssign();
         });
     </script>
+
+    <style>
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 15px; width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 50px rgba(0,0,0,0.3); }
+        .modal-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { margin: 0; font-size: 18px; font-weight: 700; color: #2e7d32; }
+        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #666; padding: 5px; transition: all 0.3s; }
+        .modal-close:hover { color: #2e7d32; }
+        .modal-body { padding: 20px; }
+        .loading { text-align: center; padding: 40px; color: #666; }
+        .error { text-align: center; padding: 40px; color: #dc3545; }
+        .detail-section { margin-bottom: 20px; }
+        .detail-section h4 { margin: 0 0 10px 0; color: #2e7d32; font-size: 16px; }
+        .detail-section p { margin: 5px 0; }
+        .produit-detail { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+        .assign-form { padding: 20px; }
+        .assign-form label { display: block; margin-bottom: 10px; font-weight: 600; }
+        .form-control { width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; }
+        .form-control:focus { outline: none; border-color: #2e7d32; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: #2e7d32; color: white; }
+        .btn-primary:hover { background: #1b5e20; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover { background: #5a6268; }
+        .notification { position: fixed; top: 20px; right: 20px; background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-left: 4px solid #2e7d32; transform: translateX(100%); opacity: 0; transition: all 0.3s; z-index: 2000; }
+        .notification.show { transform: translateX(0); opacity: 1; }
+        .notification.error { border-left-color: #dc3545; }
+        .notification i { margin-right: 8px; }
+        .livreur-card.selected { border-color: #2e7d32; background: #e8f5e9; }
+    </style>
 {% endblock %}
