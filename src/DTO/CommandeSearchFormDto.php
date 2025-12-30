@@ -13,9 +13,12 @@ class CommandeSearchFormDto
 
     public function hasFilters(): bool
     {
-        return !empty($this->numero) || !empty($this->statut) || 
-               !empty($this->typeConsommation) || $this->clientId !== null ||
-               !empty($this->dateDebut) || !empty($this->dateFin);
+        return !empty($this->numero) || 
+               !empty($this->statut) || 
+               !empty($this->typeConsommation) || 
+               !empty($this->clientId) || 
+               !empty($this->dateDebut) || 
+               !empty($this->dateFin);
     }
 
     public function hasDateRange(): bool
@@ -28,7 +31,10 @@ class CommandeSearchFormDto
         if (!$this->hasDateRange()) {
             return true;
         }
+
+        $debut = new \DateTime($this->dateDebut);
+        $fin = new \DateTime($this->dateFin);
         
-        return strtotime($this->dateDebut) <= strtotime($this->dateFin);
+        return $debut <= $fin;
     }
 }
