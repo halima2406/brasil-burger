@@ -21,7 +21,7 @@ class Paiement
     private ?\DateTimeImmutable $datePaiement = null;
 
     #[ORM\Column(length: 20)]
-    private ?string $typePaiement = null; // WAVE, OM (Orange Money), ESPECES
+    private ?string $typePaiement = null; 
 
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $reference = null;
