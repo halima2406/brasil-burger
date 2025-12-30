@@ -11,7 +11,7 @@ use Doctrine\DBAL\Connection;
 #[Route('/admin/burger')]
 class BurgerController extends AbstractController
 {
-    #[Route('/list', name: 'app_burger_list')]
+    /*#[Route('/list', name: 'app_burger_list')]
     public function list(Request $request, Connection $connection): Response
     {
         $page = max(1, (int) $request->query->get('page', 1));
@@ -44,6 +44,52 @@ class BurgerController extends AbstractController
         }
 
         
+        $totalPages = ceil($totalBurgers / $perPage);
+        $pagination = [
+            'pageEnCours' => $page,
+            'nbrePage' => $totalPages,
+        ];
+
+        return $this->render('admin/burger/list.html.twig', array_merge([
+            'burgers' => $burgers
+        ], $pagination));
+    }*/
+
+
+    #[Route('/list', name: 'app_burger_list')]
+    public function list(Request $request, Connection $connection): Response
+    {
+        $page = max(1, (int) $request->query->get('page', 1));
+        $perPage = 10;
+        $offset = ($page - 1) * $perPage;
+
+        $totalBurgers = $connection->fetchOne("
+            SELECT COUNT(*) FROM produit p WHERE p.type_produit = 'BURGER'
+        ") ?: 0;
+
+        $burgers = $connection->fetchAllAssociative("
+            SELECT p.id, p.nom, p.prix, p.type_produit,
+                COALESCE(SUM(lc.quantite), 0) as ventes_totales,
+                COALESCE(SUM(CASE WHEN DATE(c.date_commande) = CURRENT_DATE THEN lc.quantite ELSE 0 END), 0) as ventes_jour
+            FROM produit p 
+            LEFT JOIN ligne_commande lc ON p.id = lc.produit_id
+            LEFT JOIN commande c ON lc.commande_id = c.id AND c.statut IN ('VALIDEE', 'EN_COURS', 'PRETE', 'LIVREE', 'TERMINEE')
+            WHERE p.type_produit = 'BURGER'
+            GROUP BY p.id, p.nom, p.prix, p.type_produit
+            ORDER BY p.nom ASC
+            LIMIT $perPage OFFSET $offset
+        ");
+
+        foreach ($burgers as &$burger) {
+            $burger['prix_formate'] = number_format($burger['prix'], 0, ',', ' ');
+            $burger['disponible'] = $burger['prix'] > 0;
+            $burger['statut'] = $burger['disponible'] ? 'Actif' : 'Inactif';
+            $burger['archive'] = false;
+            
+        
+            $burger['description'] = $this->getDescriptionBurger($burger['nom']);
+        }
+
         $totalPages = ceil($totalBurgers / $perPage);
         $pagination = [
             'pageEnCours' => $page,
@@ -170,5 +216,22 @@ class BurgerController extends AbstractController
         } catch (\Exception $e) {
             return $this->json(['error' => 'Erreur lors de la suppression'], 500);
         }
+    }
+
+
+   
+
+    private function getDescriptionBurger(string $nom): string
+    {
+        $descriptions = [
+            'Brasil Burger Classic' => 'Pain brioche, steak haché 150g, cheddar, salade, tomate, oignon, sauce Brasil',
+            'Brasil Royal' => 'Pain artisanal, double steak 200g, bacon, fromage blanc, roquette, sauce royale',
+            'Chicken Burger' => 'Pain brioché, filet de poulet grillé, avocat, salade iceberg, tomate, mayo épicée',
+            'Double Cheese' => 'Pain brioché, double steak 180g, double cheddar, cornichons, oignon caramélisé',
+            'Monster Burger' => 'Pain XL, triple steak 250g, bacon, cheddar, oignon frit, sauce BBQ, jalapeños',
+            'Veggie Burger' => 'Pain complet, steak végétal, avocat, tomate, salade, concombre, sauce verte'
+        ];
+        
+        return $descriptions[$nom] ?? 'Burger savoureux avec ingrédients frais et sauce maison';
     }
 }
