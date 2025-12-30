@@ -25,7 +25,7 @@
                     Tous <span class="count">{{ stats.total_complements }}</span>
                 </a>
                 <a href="?filter=frites&page=1" class="filter-btn {{ filter == 'frites' ? 'active' : '' }}">
-                    <i class="fas fa-utensils"></i> Frites <span class="count">{{ stats.accompagnements }}</span>
+                    <i class="fas fa-utensils"></i> Frites <span class="count">{{ stats.frites }}</span>
                 </a>
                 <a href="?filter=boissons&page=1" class="filter-btn {{ filter == 'boissons' ? 'active' : '' }}">
                     <i class="fas fa-glass-water"></i> Boissons <span class="count">{{ stats.boissons }}</span>
@@ -114,6 +114,37 @@
             </tbody>
         </table>
     </div>
+
+
+    {% if pagination.total_pages > 1 %}
+    <div class="pagination-container">
+        <div class="pagination">
+            {% if pagination.has_previous %}
+                <a href="?page={{ pagination.previous_page }}&filter={{ filter }}" class="pagination-btn">
+                    <i class="fas fa-chevron-left"></i> Précédent
+                </a>
+            {% endif %}
+            
+            {% for pageNum in pagination.pages %}
+                {% if pageNum == pagination.current_page %}
+                    <span class="pagination-btn active">{{ pageNum }}</span>
+                {% else %}
+                    <a href="?page={{ pageNum }}&filter={{ filter }}" class="pagination-btn">{{ pageNum }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+                <a href="?page={{ pagination.next_page }}&filter={{ filter }}" class="pagination-btn">
+                    Suivant <i class="fas fa-chevron-right"></i>
+                </a>
+            {% endif %}
+        </div>
+        <p class="pagination-info">
+            Page {{ pagination.current_page }} sur {{ pagination.total_pages }} 
+            ({{ pagination.total_items }} éléments)
+        </p>
+    </div>
+    {% endif %}
 </div>
 
 <div id="modalOverlay" class="modal-overlay">
@@ -121,6 +152,71 @@
         <div id="modalContent" class="modal-content"></div>
     </div>
 </div>
+
+<style>
+/* STYLES PAGINATION AJOUTÉS */
+.pagination-container {
+    margin-top: 30px;
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    padding: 10px 15px;
+    background: #fff;
+    border: 2px solid #e1e4e8;
+    color: #333;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pagination-btn:hover {
+    background: #f1f3f4;
+    color: #007bff;
+    border-color: #007bff;
+    transform: translateY(-1px);
+}
+
+.pagination-btn.active {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.3);
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .pagination {
+        gap: 4px;
+    }
+    
+    .pagination-btn {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+}
+</style>
 {% endblock %}
 
 {% block javascripts %}

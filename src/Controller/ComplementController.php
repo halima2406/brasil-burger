@@ -18,15 +18,13 @@ class ComplementController extends AbstractController
         try {
             $filter = $request->query->get('filter', 'tous');
             $page = max(1, (int) $request->query->get('page', 1));
-            $perPage = 10;
+            $perPage = 5;
             $offset = ($page - 1) * $perPage;
             
             $whereCondition = $this->getWhereConditionForFilter($filter);
             
-            
             $totalItems = $connection->fetchOne("
-                SELECT COUNT(*) FROM produit p
-                WHERE $whereCondition
+                SELECT COUNT(*) FROM produit p WHERE $whereCondition
             ") ?: 0;
             
             $complements = $connection->fetchAllAssociative("
@@ -68,25 +66,26 @@ class ComplementController extends AbstractController
 
             $stats = $this->getStatsComplements($connection);
             
-            // Calculs pagination
             $totalPages = ceil($totalItems / $perPage);
-            $pagination = [
-                'current_page' => $page,
-                'total_pages' => $totalPages,
-                'total_items' => $totalItems,
-                'per_page' => $perPage,
-                'has_previous' => $page > 1,
-                'has_next' => $page < $totalPages,
-                'previous_page' => $page > 1 ? $page - 1 : null,
-                'next_page' => $page < $totalPages ? $page + 1 : null
-            ];
-
+            
             return $this->render('admin/complement/list.html.twig', [
                 'complements' => $complements,
                 'filter' => $filter,
                 'stats' => $stats,
                 'totalComplements' => $totalItems,
-                'pagination' => $pagination
+                'pageEnCours' => $page,
+                'nbrePage' => $totalPages,
+                'pagination' => [
+                    'current_page' => $page,
+                    'total_pages' => $totalPages,
+                    'total_items' => $totalItems,
+                    'per_page' => $perPage,
+                    'has_previous' => $page > 1,
+                    'has_next' => $page < $totalPages,
+                    'previous_page' => $page > 1 ? $page - 1 : null,
+                    'next_page' => $page < $totalPages ? $page + 1 : null,
+                    'pages' => range(1, $totalPages)
+                ]
             ]);
 
         } catch (\Exception $e) {
