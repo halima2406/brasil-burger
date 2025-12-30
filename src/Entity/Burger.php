@@ -49,7 +49,7 @@ class Burger
     #[ORM\OneToMany(targetEntity: Commande::class, mappedBy: 'burger')]
     private Collection $commandes;
 
-    // Champ non persisté pour l'upload
+  
     private ?UploadedFile $imageFile = null;
 
     public function __construct()
@@ -155,9 +155,6 @@ class Burger
         return $this;
     }
 
-    /**
-     * @return Collection<int, Menu>
-     */
     public function getMenus(): Collection
     {
         return $this->menus;
@@ -182,9 +179,7 @@ class Burger
         return $this;
     }
 
-    /**
-     * @return Collection<int, Commande>
-     */
+   
     public function getCommandes(): Collection
     {
         return $this->commandes;
