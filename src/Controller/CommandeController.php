@@ -121,4 +121,36 @@ class CommandeController extends AbstractController
             return $this->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    #[Route('/annuler/{id}', name: 'app_commande_annuler', methods: ['POST'])]
+    public function annuler(int $id, Connection $connection): JsonResponse
+    {
+        try {
+            $commande = $connection->fetchAssociative("
+                SELECT statut FROM commande WHERE id = ?
+            ", [$id]);
+
+            if (!$commande) {
+                return $this->json(['error' => 'Commande non trouvée'], 404);
+            }
+
+            if (in_array($commande['statut'], ['LIVREE', 'TERMINEE', 'ANNULEE'])) {
+                return $this->json(['error' => 'Cette commande ne peut plus être annulée'], 400);
+            }
+
+            $connection->executeStatement("
+                UPDATE commande 
+                SET statut = 'ANNULEE' 
+                WHERE id = ?
+            ", [$id]);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Commande annulée avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }
