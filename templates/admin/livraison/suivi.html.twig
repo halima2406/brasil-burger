@@ -54,7 +54,7 @@
                     <strong>{{ livraison.livreur_nom }}</strong>
                     <p>{{ livraison.livreur_tel }}</p>
                 </div>
-                <button class="contact-btn" onclick="contactLivreur('{{ livraison.livreur_tel }}')">
+                <button class="contact-btn disabled" title="Fonction bientôt disponible">
                     <i class="fas fa-phone"></i>
                 </button>
             </div>
@@ -82,7 +82,7 @@
                 <button class="btn-action details" onclick="voirDetails({{ livraison.id }})">
                     <i class="fas fa-eye"></i> Détails
                 </button>
-                <button class="btn-action track" onclick="trackLivraison({{ livraison.id }})">
+                <button class="btn-action track disabled" title="Fonction bientôt disponible">
                     <i class="fas fa-route"></i> Localiser
                 </button>
             </div>
@@ -114,28 +114,6 @@
         </div>
     </div>
 </div>
-
-<!-- Modal de localisation -->
-<div id="modalTrack" class="modal-overlay">
-    <div class="modal">
-        <div class="modal-header">
-            <h3 id="trackTitle">Localisation Livreur</h3>
-            <button class="modal-close" onclick="fermerModalTrack()">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div class="map-placeholder">
-                <i class="fas fa-map-marked-alt fa-3x"></i>
-                <h4>Carte GPS</h4>
-                <p>Fonctionnalité de géolocalisation disponible prochainement</p>
-                <div class="mock-position">
-                    <strong>Position estimée :</strong><br>
-                    Dakar, Sénégal<br>
-                    <small class="text-muted">Dernière mise à jour: il y a 2 minutes</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block javascripts %}
@@ -154,12 +132,6 @@ function filterByZone(zoneId) {
 
 function refreshSuivi() {
     location.reload();
-}
-
-function contactLivreur(telephone) {
-    if (confirm(`Appeler le livreur au ${telephone} ?`)) {
-        window.location.href = `tel:${telephone}`;
-    }
 }
 
 async function voirDetails(commandeId) {
@@ -216,15 +188,6 @@ async function voirDetails(commandeId) {
 
 function fermerModal() {
     document.getElementById('modalDetails').classList.remove('active');
-}
-
-function trackLivraison(commandeId) {
-    document.getElementById('trackTitle').textContent = `Localisation CMD${commandeId}`;
-    document.getElementById('modalTrack').classList.add('active');
-}
-
-function fermerModalTrack() {
-    document.getElementById('modalTrack').classList.remove('active');
 }
 
 // Auto-refresh every 30 seconds
